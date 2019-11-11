@@ -25,7 +25,7 @@ When sending a message indicating the recipients, the message is sent to their q
     },
   });
 
-  // слушаем сообщения
+  // listening to messages
   client.consumeByAction('logAction', ({ message, ack, nack }) => {
     // do something
     ack();
