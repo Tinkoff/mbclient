@@ -1,7 +1,7 @@
 import connect from './connection';
-import { AMQPOptions } from './connection/adapters/amqp-node';
-import { Logger } from './types/logger';
-import { MessageHandlerOptions, MessageHandler } from './types/message';
+import { AMQPOptions } from './adapters/amqp-node';
+import { Logger } from './logger';
+import { MessageHandlerOptions, MessageHandler } from './message';
 
 export interface CreateServiceOptions {
   appId?: string;
@@ -70,5 +70,5 @@ export function createClient(options: CreateServiceOptions): Client {
   };
 }
 
-export { default as createMessageError } from './utils/create-error';
+export { default as createMessageError } from './create-error';
 export { default as connectService, ServiceConnection } from './service';

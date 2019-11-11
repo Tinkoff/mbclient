@@ -7,8 +7,8 @@ import {
   ConnectServicesError,
   emptyMessageError,
   EmptyMessageError,
-  ConnectionNotInitialized,
-} from './index';
+  ConnectionNotInitialized
+} from './errors';
 
 it('should have amqpConnectError', () => {
   expect(typeof amqpConnectError).toBe('function');

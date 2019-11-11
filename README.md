@@ -1,28 +1,18 @@
-# Клиент брокера сообщений
+# Message Broker Client/Server
 
-[![pipeline status](https://gitlab-rnd.tcsbank.ru/pfa/libs-server-message-broker-client/badges/master/pipeline.svg)](https://gitlab-rnd.tcsbank.ru/pfa/libs-server-message-broker-client/commits/master)
-[![coverage report](https://gitlab-rnd.tcsbank.ru/pfa/libs-server-message-broker-client/badges/master/coverage.svg)](https://gitlab-rnd.tcsbank.ru/pfa/libs-server-message-broker-client/commits/master)
+The MB client creates an abstraction over the interservice interaction on top of RabbitMQ. The library defines a common interface for messages and provides ways to send and subscribe to them. The client supports automatic reconnections to RabbitMQ and support for the Rabbit cluster.
 
-Предназначен для соединения и работы с сервисом RabbitMQ
+The mechanism is quite simple and currently supports 2 simple operation modes (sending directly to the queue, sending to topic exchange)
 
-Примеры использования:
+When a client is created, a durable topic exchange ("dispatcher" by default) is automatically created, and a service queue (with the name that was passed as serviceName during initialization).
 
-## Подписка
-### Подписка на broadcast сообщения
-```javascript
-const client = createClient({
-    serviceName: 'news',
-    connectOptions: {
-      username: 'test',
-      password: '123',
-      host: 'localhost',
-      port: 5672,
-    },
-  });
-```
+When sending a message indicating the recipients, the message is sent to their queue directly. Otherwise, the message is sent via routingKey "{serviceName}. {Action}" to the dispatcher exchange.
 
-###
-### Подписка на broadcast сообщения по типу сообщения
+# Examples
+
+## Subscribing
+
+### Subscribe to broadcast messages by message type
 
 ```javascript
   const client = createClient({
@@ -47,29 +37,30 @@ const client = createClient({
   });
   ```
 
-## Публикация
-### Публикация сообщения с указанием получателей
+## Publishing
+### Publishing a message indicating recipients
+
 ```javascript
   client.send({
-    action: 'comeAction';
-    payload: 'some payload';
-    requestId: 'id';
-    recipients: ['news', 'test']; // сообщение будет отправлено news/test
+    action: 'comeAction',
+    payload: 'some payload',
+    requestId: 'id',
+    recipients: ['news', 'test'] // a message will be sent to news and test
   });
 ```
 
-### Публикация без указания получателей (broadcast)
+### Publication without specifying recipients (broadcast)
 ```javascript
   client.send({
-    action: 'comeAction';
-    payload: 'some payload';
-    requestId: 'id';
+    action: 'comeAction', // Everyone who consumed on comeAction will receive this message
+    payload: 'some payload',
+    requestId: 'id',
   });
 ```
 
-## Подписка на состояние соединения
+## Subscribe to connection status
 
-Есть возможность подписаться на изменение состояния соединения с rabbitmq
+It is possible to subscribe to a change in connection status with rabbitmq
 
 ```javascript
 client.on('disconnected', () => {
@@ -81,12 +72,28 @@ client.on('connected', () => {
 });
 ```
 
-Поддерживаемые события:
+Supported Events:
 
-`connecting` - Попытка подключения к amqp
+`connecting` - Attempt to connect to amqp
 
-`connected` - Успешное подключение к amqp
+`connected` - Successful connection to amqp
 
-`disconnecting` - Закрытие соединения (обычно эмиттится при вызове close для graceful отключения)
+`disconnecting` - Close the connection (usually emitted when calling close for a graceful disconnect)
 
-`disconnected` - Потеря соединения с amqp в связи с ошибкой или в результате отработки close()
+`disconnected` - Loss of connection with amqp due to an error or as a result of processing close ()
+## License
+
+```
+Copyright 2019 Tinkoff Bank
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

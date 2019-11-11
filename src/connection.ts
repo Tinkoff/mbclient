@@ -1,6 +1,6 @@
 import getAMQPNodeAdapter from './adapters/amqp-node';
-import connectServiceQueues, { ServiceConnection } from '../service/service';
-import { CreateServiceOptions } from '../index';
+import connectServiceQueues, { ServiceConnection } from './service';
+import { CreateServiceOptions } from './index';
 
 export enum ConnectionStatus {
   CONNECTING = 'connecting',

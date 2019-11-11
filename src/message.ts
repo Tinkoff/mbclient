@@ -38,7 +38,7 @@ interface DistributedMessageProperties {
    * meaning persistent. That's just obscure though. Use the
    * option persistent instead.
    */
-  deliveryMode?: 1 | 2 | number; // tslint:disable-line no-magic-numbers
+  deliveryMode?: 1 | 2 | number;
 
   /**
    * a MIME type for the message content

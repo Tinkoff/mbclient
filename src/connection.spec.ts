@@ -1,7 +1,7 @@
-import connect from './index';
-import connectService from '../service/service';
+import connect from './connection';
+import connectService from './service';
 
-jest.mock('../service');
+jest.mock('./service');
 jest.mock('./adapters/amqp-node', () => jest.fn().mockReturnValue({ connect: jest.fn() }));
 
 const connectServiceMock = connectService as jest.Mock;
@@ -11,10 +11,10 @@ describe('connect', () => {
     const optionsMock = {
       connectOptions: {
         username: 'stub',
-        password: 'test',
+        password: 'test'
       },
       logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
-      serviceName: 'test',
+      serviceName: 'test'
     };
 
     connect(optionsMock);

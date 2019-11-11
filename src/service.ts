@@ -3,9 +3,9 @@ import omit from 'lodash/omit';
 import defaultsDeep from 'lodash/defaultsDeep';
 import EventEmitter from 'events';
 
-import timeout from '../utils/timeout';
-import randomPickConnectionString from '../utils/random-pick';
-import infiniteRetryStrategy from '../connection/retry-strategies/infinite';
+import timeout from './timeout';
+import randomPickConnectionString from './random-pick';
+import infiniteRetryStrategy from './retry-strategies/infinite';
 import {
   EmptyMessageError,
   AmqpConnectGracefullyStopped,
@@ -13,11 +13,11 @@ import {
   amqpConnectError,
   amqpConnectGracefullyStopped,
   ConnectionNotInitialized
-} from '../errors';
-import { RawMessage, Message, MessageOptions, MessageHandlerOptions, MessageHandler } from '../types/message';
-import { ConnectionStatus } from '../connection';
-import { AMQPAdapter, AMQPOptions, AMQPConnection } from '../connection/adapters/amqp-node';
-import { Logger } from '../types/logger';
+} from './errors';
+import { RawMessage, Message, MessageOptions, MessageHandlerOptions, MessageHandler } from './message';
+import { ConnectionStatus } from './connection';
+import { AMQPAdapter, AMQPOptions, AMQPConnection } from './adapters/amqp-node';
+import { Logger } from './logger';
 
 const DEFAULT_HEART_BEAT = 30;
 
@@ -484,7 +484,7 @@ export class ServiceConnection extends EventEmitter {
  *
  * @example
  *
- * const { service } = await connectService({
+ * const { service, connection } = await connectService({
  *   username: 'username'
  *   password: '123';
  *   host: 'localhost'

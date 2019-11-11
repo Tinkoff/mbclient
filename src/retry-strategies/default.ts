@@ -1,5 +1,3 @@
-// tslint:disable no-magic-numbers
-
 const defaultRetryStrategy = (times: number): number => {
   const timeMax = 2 ** times - 1;
 

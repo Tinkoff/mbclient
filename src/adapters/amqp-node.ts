@@ -1,6 +1,6 @@
 import { connect } from 'amqplib';
 
-import { Message, MessageOptions, RawMessage } from '../../types/message';
+import { Message, MessageOptions, RawMessage } from '../message';
 
 const CONNECTION_EVENTS = ['error', 'close'];
 const CHANNEL_EVENTS = ['error', 'return', 'drain'];

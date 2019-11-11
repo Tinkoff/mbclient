@@ -9,9 +9,9 @@ jest.mock('./connection', () =>
       subscribeOn: jest.fn(),
       unsubscribe: jest.fn(),
       on: jest.fn(),
-      once: jest.fn(),
+      once: jest.fn()
     },
-    connection: Promise.resolve(),
+    connection: Promise.resolve()
   })
 );
 const now = 1479427200000;
@@ -24,14 +24,14 @@ const optionsMock = {
   subscriptions: {
     actionFilter: '^logAction$',
     type: 'black',
-    subscriptions: ['news'],
+    subscriptions: ['news']
   },
   connectOptions: {
     username: 'test',
     password: '123',
-    host: 'localhost:5672',
+    host: 'localhost:5672'
   },
-  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
 };
 
 describe('createClient', () => {
@@ -63,9 +63,9 @@ describe('createClient', () => {
         subscribeOn: jest.fn(),
         unsubscribe: jest.fn(),
         on: jest.fn(),
-        once: jest.fn(),
+        once: jest.fn()
       },
-      connection: Promise.resolve(),
+      connection: Promise.resolve()
     };
     connectMock.mockReturnValue(connectOpt);
     const client = createClient(optionsMock);
@@ -80,7 +80,7 @@ describe('createClient', () => {
           requestId: '1',
           correlationId: '1',
           recipients: ['news'],
-          payload: 'test',
+          payload: 'test'
         });
 
         expect(connectOpt.service.postMessage.mock.calls[0]).toMatchInlineSnapshot(`

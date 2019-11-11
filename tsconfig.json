@@ -1,22 +1,30 @@
 {
   "compilerOptions": {
-    "skipLibCheck": true,
-    "target": "es2018",
+    "declaration": true,
     "module": "commonjs",
-    "lib": ["es2018"],
-    "allowJs": false,
+    "target": "es2018",
+    "lib": ["es6", "es2017"],
     "sourceMap": true,
+    "types": ["node", "jest"],
+    "moduleResolution": "node",
     "outDir": "dist",
     "rootDir": "src",
-    "strict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
-    "typeRoots": ["node_modules/@types"],
-    "types": ["jest"],
+    "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "strictNullChecks": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.spec.ts", "src/**/__mocks__/*.ts"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "jest",
+    "src/**/*.spec.ts",
+    "src/**/__mocks__/*.ts"
+  ]
 }

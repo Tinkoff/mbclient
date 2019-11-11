@@ -17,21 +17,8 @@ module.exports = {
   "coveragePathIgnorePatterns": [
     "<rootDir>/dist/",
     "<rootDir>/node_modules/",
-    "<rootDir>/src/index.ts",
-    "<rootDir>/src/constants.ts",
-    "<rootDir>/src/errors.ts",
-    "<rootDir>/src/connection-status.ts",
-    "<rootDir>/src/locked-key-retrieve-strategy.ts",
-    "<rootDir>/src/adapters/test",
+    "<rootDir>/src/index.ts"
   ],
-  "coverageThreshold": {
-    "global": {
-      "branches": 90,
-      "functions": 90,
-      "lines": 90,
-      "statements": 90
-    }
-  },
   "moduleFileExtensions": [
     "ts",
     "js",

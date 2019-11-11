@@ -1,63 +1,64 @@
 {
-  "name": "@pfa/message-broker-client",
-  "version": "6.2.2",
+  "name": "mbclient",
+  "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "description": "Message broker client library",
+  "description": "Message broker library",
   "keywords": [
-    "libs",
-    "server",
-    "mq"
+    "amqp",
+    "message broker"
   ],
-  "license": "UNLICENSED",
-  "author": "Gajewski Dmitriy Yurevish <ext.dgaevskiy@tinkoff.ru>",
+  "license": "Apache-2.0",
+  "author": "Gajewski Dmitriy Yurevish <d.y.gaevskiy@tinkoff.ru>",
   "files": [
     "dist"
   ],
-  "repository": "https://gitlab-rnd.tcsbank.ru/pfa/libs-server-message-broker-client.git",
+  "repository": {
+    "type": "git",
+    "repository": "https://github.com/TinkoffCreditSystems/mbclient.git"
+  },
   "scripts": {
-    "build": "rimraf dist && tsc --skipLibCheck -d",
-    "tsnode": "ts-node",
-    "tsc": "tsc",
-    "lint": "tslint -c tslint.json -p tsconfig.json",
-    "test": "jest",
-    "test:unit": "jest --forceExit --coverage --verbose --passWithNoTests",
+    "cz": "git-cz",
+    "clean": "rm -rf dist",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "tslint --project . \"src/**/*.ts\"",
     "check": "npm run lint && npm run test:unit",
-    "format": "prettier --config .prettierrc --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
-    "prepublishOnly": "npm run build && npm run check"
+    "test:unit": "jest --forceExit --coverage --verbose --detectOpenHandles --passWithNoTests",
+    "test:ci": "npm run test:unit -- --coverageReporters=text-lcov | coveralls",
+    "test:unit:watch": "jest --watch",
+    "prepublishOnly": "npm run check && npm run build",
+    "semantic-release": "semantic-release"
+  },
+  "engines": {
+    "node": ">=8.0.0"
   },
   "dependencies": {
-    "amqplib": "^0.5.3",
-    "lodash": "^4.17.4",
-    "uuid": "^3.1.0"
+    "amqplib": "^0.5.5",
+    "lodash": "^4.17.15",
+    "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "@pfa/tslint-rules": "^0.2.0",
-    "@types/amqplib": "^0.5.10",
-    "@types/jest": "^24.0.11",
-    "@types/lodash": "^4.14.122",
-    "@types/node": "^11.10.5",
-    "@types/uuid": "^3.4.4",
-    "cross-env": "^5.0.5",
-    "husky": "^1.3.1",
-    "jest": "^24.4.0",
-    "lint-staged": "^8.1.5",
-    "prettier": "^1.16.4",
-    "rimraf": "^2.6.2",
-    "ts-jest": "^24.0.0",
-    "ts-node": "^8.0.3",
-    "tslint": "^5.13.1",
-    "typescript": "^3.3.3333"
+    "@types/amqplib": "^0.5.13",
+    "@types/jest": "^24.0.22",
+    "@types/lodash": "^4.14.146",
+    "@types/node": "^8.10.59",
+    "@types/uuid": "^3.4.6",
+    "coveralls": "^3.0.7",
+    "cz-conventional-changelog": "^3.0.2",
+    "semantic-release": "^15.13.30",
+    "@semantic-release/changelog": "^3.0.5",
+    "@semantic-release/git": "^7.0.18",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.1.0",
+    "ts-node": "^8.4.1",
+    "tslint": "^5.20.1",
+    "tslint-config-unional": "^0.10.0",
+    "typescript": "^3.7.2"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
     }
-  },
-  "lint-staged": {
-    "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
-      "prettier --config .prettierrc --write",
-      "git add"
-    ]
   }
 }

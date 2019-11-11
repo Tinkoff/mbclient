@@ -1,5 +1,5 @@
 import connectService, { ServiceConnection } from './service';
-import { AMQPConnection } from '../connection/adapters/amqp-node';
+import { AMQPConnection } from './adapters/amqp-node';
 
 const testAdapter = { connect: jest.fn() };
 const optionsMock = {
@@ -132,7 +132,6 @@ describe('#getConnection', () => {
   it('sets retry strategy from options and retries on errors', async () => {
     const serviceConn = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
 
-    // tslint:disable no-magic-numbers
     const retryStrategy = jest.fn().mockReturnValue(5);
 
     serviceConn.options.retryStrategy = retryStrategy;
@@ -149,7 +148,6 @@ describe('#getConnection', () => {
 
     expect(retryStrategy).toBeCalledWith(1);
     expect(retryStrategy).toBeCalledWith(2);
-    // tslint:enable no-magic-numbers
   });
 
   it('calls adapter connect method', async () => {
@@ -437,7 +435,6 @@ Array [
 
 describe('#setActionHandler', () => {
   it('sets action handler to hash map', () => {
-    // tslint:disable-next-line no-empty
     const handlerMock = async (options: any): Promise<void> => {};
 
     serviceConnection.setActionHandler('handler1', handlerMock);
@@ -448,8 +445,7 @@ describe('#setActionHandler', () => {
 
 describe('#getActionHandler', () => {
   it('gets action handler from hash map', () => {
-    // tslint:disable-next-line no-empty
-    const handlerMock = async (options: any): Promise<void> => {};
+    const handlerMock = async (_options: any): Promise<void> => {};
 
     serviceConnection.handlers.handler1 = handlerMock;
 
@@ -484,7 +480,6 @@ describe('#subscribe', () => {
     serviceConnection.initQueue = jest.fn().mockResolvedValue(true);
     serviceConnection.setActionHandler = jest.fn().mockResolvedValue(true);
 
-    // tslint:disable-next-line no-empty
     await serviceConnection.subscribe(async () => {});
 
     expect(serviceConnection.setActionHandler).lastCalledWith('defaultAction', expect.any(Function));
@@ -496,7 +491,6 @@ describe('#subscribeOn', () => {
     serviceConnection.initQueue = jest.fn().mockResolvedValue(true);
     serviceConnection.setActionHandler = jest.fn().mockResolvedValue(true);
 
-    // tslint:disable-next-line no-empty
     await serviceConnection.subscribeOn('actionAction', async () => {});
 
     expect(amqpConnection.bindQueue).lastCalledWith('dispatcher', 'dispatcher', '*.actionAction');
@@ -508,12 +502,10 @@ describe('#initQueue', () => {
   it('consumes queue if it was not consumed before', async () => {
     serviceConnection.consumeQueue = jest.fn();
 
-    // tslint:disable no-empty
     serviceConnection.handlers = {
       defaultAction: async (): Promise<void> => {},
       testAction: async (): Promise<void> => {}
     };
-    // tslint:enable no-empty
 
     await serviceConnection.initQueue('input');
 
@@ -544,7 +536,6 @@ describe('#unsubscribe', () => {
 
 describe('#consumeQueue', () => {
   it('consumes queue and saves its consumer tag to hash map', async () => {
-    // tslint:disable-next-line no-empty
     const result = await serviceConnection.consumeQueue('dispatcher', () => {});
 
     expect(amqpConnection.prefetch).lastCalledWith(1);
