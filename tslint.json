@@ -1,0 +1,3 @@
+{
+  "extends": ["@pfa/tslint-rules"]
+}

@@ -1,0 +1,63 @@
+{
+  "name": "@pfa/message-broker-client",
+  "version": "6.2.2",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "description": "Message broker client library",
+  "keywords": [
+    "libs",
+    "server",
+    "mq"
+  ],
+  "license": "UNLICENSED",
+  "author": "Gajewski Dmitriy Yurevish <ext.dgaevskiy@tinkoff.ru>",
+  "files": [
+    "dist"
+  ],
+  "repository": "https://gitlab-rnd.tcsbank.ru/pfa/libs-server-message-broker-client.git",
+  "scripts": {
+    "build": "rimraf dist && tsc --skipLibCheck -d",
+    "tsnode": "ts-node",
+    "tsc": "tsc",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "test": "jest",
+    "test:unit": "jest --forceExit --coverage --verbose --passWithNoTests",
+    "check": "npm run lint && npm run test:unit",
+    "format": "prettier --config .prettierrc --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "prepublishOnly": "npm run build && npm run check"
+  },
+  "dependencies": {
+    "amqplib": "^0.5.3",
+    "lodash": "^4.17.4",
+    "uuid": "^3.1.0"
+  },
+  "devDependencies": {
+    "@pfa/tslint-rules": "^0.2.0",
+    "@types/amqplib": "^0.5.10",
+    "@types/jest": "^24.0.11",
+    "@types/lodash": "^4.14.122",
+    "@types/node": "^11.10.5",
+    "@types/uuid": "^3.4.4",
+    "cross-env": "^5.0.5",
+    "husky": "^1.3.1",
+    "jest": "^24.4.0",
+    "lint-staged": "^8.1.5",
+    "prettier": "^1.16.4",
+    "rimraf": "^2.6.2",
+    "ts-jest": "^24.0.0",
+    "ts-node": "^8.0.3",
+    "tslint": "^5.13.1",
+    "typescript": "^3.3.3333"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}": [
+      "prettier --config .prettierrc --write",
+      "git add"
+    ]
+  }
+}
