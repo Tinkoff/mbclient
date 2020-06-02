@@ -3,6 +3,8 @@ interface MessageHeaders {
   requestId?: string;
   action?: string;
   type?: string;
+  routingKey?: string;
+  isOriginalContent?: boolean;
 }
 
 /**
