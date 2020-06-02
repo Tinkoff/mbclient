@@ -555,3 +555,25 @@ describe('connectService', () => {
     expect(result).toHaveProperty('connection');
   });
 });
+
+describe('#getTopicExchange', () => {
+  it('should return default topic exchange when parameter exchange is empty', () => {
+    expect(ServiceConnection.getTopicExchange()).toBe('dispatcher');
+  });
+  it('should return value parameter exchange when parameter exchange isn\'t empty', () => {
+    expect(ServiceConnection.getTopicExchange('my_dispatcher')).toBe('my_dispatcher');
+  });
+});
+
+describe('#getContent', () => {
+  it('should return JSON parse object when buffer contains json object', () => {
+    const exampleData = {route: 'test'};
+    const content: Buffer = Buffer.from(JSON.stringify(exampleData));
+    expect(ServiceConnection.getContent(content)).toEqual(exampleData);
+  });
+  it('should return default object with property data when buffer doesn\'t contain json object', () => {
+    const exampleData = 'test';
+    const content: Buffer = Buffer.from(exampleData);
+    expect(ServiceConnection.getContent(content)).toEqual({data: 'test'});
+  });
+});
