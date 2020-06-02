@@ -80,7 +80,9 @@ describe('createClient', () => {
           requestId: '1',
           correlationId: '1',
           recipients: ['news'],
-          payload: 'test'
+          payload: 'test',
+          routingKey: 'test_route',
+          isOriginalContent: false
         });
 
         expect(connectOpt.service.postMessage.mock.calls[0]).toMatchInlineSnapshot(`
@@ -93,8 +95,10 @@ Array [
     "correlationId": "1",
     "headers": Object {
       "action": "test",
+      "isOriginalContent": false,
       "recipients": "news",
       "requestId": "1",
+      "routingKey": "test_route",
     },
     "replyTo": "test",
     "timestamp": 1479427200000,
