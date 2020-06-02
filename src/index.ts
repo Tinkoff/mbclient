@@ -16,6 +16,8 @@ export interface ClientSendMessage {
   requestId?: string;
   recipients?: string[];
   correlationId?: string;
+  routingKey?: string;
+  isOriginalContent?: boolean;
 }
 
 type Listener = (eventName: string, listener: (...args: any[]) => void) => void;
@@ -40,7 +42,7 @@ export function createClient(options: CreateServiceOptions): Client {
   return {
     send: async (clientSendMessageOptions: ClientSendMessage): Promise<any> =>
       connection.then(async () => {
-        const { payload, action, requestId, recipients = [], correlationId } = clientSendMessageOptions;
+        const { payload, action, requestId, recipients = [], correlationId, routingKey, isOriginalContent = false } = clientSendMessageOptions;
         const sendMessageOptions = {
           replyTo: serviceName,
           correlationId,
@@ -48,7 +50,9 @@ export function createClient(options: CreateServiceOptions): Client {
           headers: {
             requestId,
             recipients: recipients.join(','),
-            action
+            action,
+            routingKey,
+            isOriginalContent
           }
         };
 

@@ -14,6 +14,7 @@ export interface AMQPOptions {
   heartbeat?: number;
   maxReconnects?: number;
   retryStrategy?: (times: number) => number;
+  exchange?: string;
 }
 
 export interface AMQPConnection {

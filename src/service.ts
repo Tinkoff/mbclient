@@ -33,6 +33,33 @@ export class ServiceConnection extends EventEmitter {
     }
   }
 
+  /**
+   * The method of converting input content, in case of an error, returns an object with a string placed inside
+   * @param {Buffer} content
+   */
+  static getContent(content: Buffer): {} {
+    let data = {};
+    try {
+      data = JSON.parse(content.toString());
+    } catch (ignore) {
+      data = {data: content.toString()};
+    }
+
+    return data;
+  }
+
+  /**
+   * Return exchange name, if @exchange is empty, returns the default value(ServiceConnection.topicExchange)
+   * @param exchange
+   */
+  static getTopicExchange(exchange?: string): string {
+    if (exchange === undefined) {
+      return ServiceConnection.topicExchange;
+    }
+
+    return exchange;
+  }
+
   static topicExchange: string = 'dispatcher';
 
   name: string;
@@ -138,7 +165,7 @@ export class ServiceConnection extends EventEmitter {
     }
     const connection = await this.connection;
 
-    await connection.assertExchange(ServiceConnection.topicExchange, 'topic', { durable: true });
+    await connection.assertExchange(ServiceConnection.getTopicExchange(this.options.exchange), 'topic', { durable: true });
   }
 
   /**
@@ -286,10 +313,12 @@ export class ServiceConnection extends EventEmitter {
       replyTo: this.name
     };
     const { headers: { action = 'default' } = {} } = options;
+    const { headers: { isOriginalContent = false } = {} } = options;
+    const { headers: { routingKey = `${this.name}.${action}` } = {} } = options;
     const computedOptions = defaultsDeep({}, options, defaultMessageOptions);
     const connection = await this.connection;
 
-    const content = Buffer.from(JSON.stringify(message));
+    const content = isOriginalContent ? message : Buffer.from(JSON.stringify(message));
 
     if (recipients.length) {
       return Promise.all(
@@ -297,7 +326,12 @@ export class ServiceConnection extends EventEmitter {
       );
     }
 
-    return connection.publish('dispatcher', `${this.name}.${action}`, content, computedOptions);
+    return connection.publish(
+        ServiceConnection.getTopicExchange(this.options.exchange),
+        routingKey,
+        content,
+        computedOptions
+    );
   }
 
   /**
@@ -324,7 +358,7 @@ export class ServiceConnection extends EventEmitter {
         message: {
           fields: message.fields,
           properties: message.properties,
-          content: JSON.parse(message.content.toString())
+          content: ServiceConnection.getContent(message.content)
         },
         ack: (): void => {
           connection.ack(message);
@@ -389,7 +423,7 @@ export class ServiceConnection extends EventEmitter {
     this.setActionHandler(actionType, onConsume);
     const connection = await this.connection;
     await this.initQueue(this.name);
-    await connection.bindQueue(this.name, 'dispatcher', `*.${actionType}`);
+    await connection.bindQueue(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${actionType}`);
   }
 
   /**
