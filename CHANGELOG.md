@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.0.0...v1.1.0) (2020-06-03)
+
+
+### Features
+
+* **release:** Add support customize field exchange and routingKey. Added ability to not convert content. Up lib version. ([1c0ecf3](https://github.com/TinkoffCreditSystems/mbclient/commit/1c0ecf3fb43d4ed2eff645b18a608c14c2de7df0))
+
 # 1.0.0 (2020-06-03)
 
 
