@@ -1,12 +1,12 @@
 # Message Broker Client/Server
 
-The MB client creates an abstraction over the interservice interaction on top of RabbitMQ. The library defines a common interface for messages and provides ways to send and subscribe to them. The client supports automatic reconnections to RabbitMQ and support for the Rabbit cluster.
+The MB client creates an abstraction over the inter-service interaction on top of RabbitMQ. The library defines a common interface for messages and provides ways to send and subscribe to them. The client supports automatic re-connections to RabbitMQ and support for the Rabbit cluster.
 
 The mechanism is quite simple and currently supports 2 simple operation modes (sending directly to the queue, sending to topic exchange)
 
-When a client is created, a durable topic exchange ("dispatcher" by default) is automatically created, and a service queue (with the name that was passed as serviceName during initialization).
+When a client created, a durable topic exchange ("dispatcher" by default) is automatically created, and a service queue (with the name that was passed as serviceName during initialization).
 
-When sending a message indicating the recipients, the message is sent to their queue directly. Otherwise, the message is sent via routingKey "{serviceName}. {Action}" to the dispatcher exchange.
+When sending a message indicating the recipients, the message sent to their queue directly. Otherwise, the message sent via routingKey "{serviceName}. {Action}" to the dispatcher exchange.
 
 # Examples
 
