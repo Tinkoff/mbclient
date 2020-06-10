@@ -5,7 +5,6 @@ import EventEmitter from 'events';
 
 import timeout from './timeout';
 import randomPickConnectionString from './random-pick';
-import infiniteRetryStrategy from './retry-strategies/infinite';
 import {
   EmptyMessageError,
   AmqpConnectGracefullyStopped,
@@ -18,6 +17,7 @@ import { RawMessage, Message, MessageOptions, MessageHandlerOptions, MessageHand
 import { ConnectionStatus } from './connection';
 import { AMQPAdapter, AMQPOptions, AMQPConnection } from './adapters/amqp-node';
 import { Logger } from './logger';
+import defaultRetryStrategy from './retry-strategies/default';
 
 const DEFAULT_HEART_BEAT = 30;
 
@@ -173,7 +173,7 @@ export class ServiceConnection extends EventEmitter {
    * default one. Default retry strategy implements exponential backoff algorithm.
    */
   async getConnection(attempt: number = 1): Promise<AMQPConnection> {
-    const { retryStrategy = infiniteRetryStrategy, maxReconnects = Infinity } = this.options;
+    const { retryStrategy = defaultRetryStrategy, maxReconnects = Infinity } = this.options;
     let connection;
 
     if (this.status === ConnectionStatus.DISCONNECTING) {
