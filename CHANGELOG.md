@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.1.0...v1.1.1) (2020-06-10)
+
+
+### Bug Fixes
+
+* **release:** Change default retry strategy ([cc86c82](https://github.com/TinkoffCreditSystems/mbclient/commit/cc86c82bda0ce48d1bfb5481ed1f2ccffa20eb30))
+
 # [1.1.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.0.0...v1.1.0) (2020-06-03)
 
 
