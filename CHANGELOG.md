@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.1.1...v1.1.2) (2020-07-13)
+
+
+### Bug Fixes
+
+* **release:** Change api function signature ([d355470](https://github.com/TinkoffCreditSystems/mbclient/commit/d355470cd93c240b2b7ae45c6b6040cf03b8d757))
+
 ## [1.1.1](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.1.0...v1.1.1) (2020-06-10)
 
 
