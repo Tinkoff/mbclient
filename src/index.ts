@@ -23,9 +23,9 @@ export interface ClientSendMessage {
 type Listener = (eventName: string, listener: (...args: any[]) => void) => void;
 
 export interface Client {
-  send: (options: ClientSendMessage) => Promise<any>;
-  consume: (callback: MessageHandler) => Promise<any>;
-  consumeByAction: (actionType: string, callback: MessageHandler) => Promise<any>;
+  send: (options: ClientSendMessage) => Promise<void>;
+  consume: (callback: MessageHandler) => Promise<void>;
+  consumeByAction: (actionType: string, callback: MessageHandler) => Promise<void>;
   cancel: () => Promise<void>;
   close: () => Promise<void>;
   on: Listener;
@@ -40,7 +40,7 @@ export function createClient(options: CreateServiceOptions): Client {
   const { service, connection } = connect(options);
 
   return {
-    send: async (clientSendMessageOptions: ClientSendMessage): Promise<any> =>
+    send: async (clientSendMessageOptions: ClientSendMessage): Promise<void> =>
       connection.then(async () => {
         const { payload, action, requestId, recipients = [], correlationId, routingKey, isOriginalContent = false } = clientSendMessageOptions;
         const sendMessageOptions = {
