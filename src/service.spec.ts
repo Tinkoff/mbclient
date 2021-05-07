@@ -303,6 +303,9 @@ Array [
     "type": "Buffer",
   },
   Object {
+    "headers": Object {
+      "recipients": "",
+    },
     "messageId": "42",
     "persistent": true,
     "replyTo": "dispatcher",
@@ -343,6 +346,9 @@ Array [
     "type": "Buffer",
   },
   Object {
+    "headers": Object {
+      "recipients": "",
+    },
     "messageId": "43",
     "persistent": true,
     "replyTo": "dispatcher",

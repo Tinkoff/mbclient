@@ -1,4 +1,3 @@
-import omit from 'lodash/omit';
 import { AMQPOptions } from './adapters/amqp-node';
 
 export class ConnectServicesError extends Error {
@@ -57,7 +56,8 @@ export function amqpConnectGracefullyStopped(): AmqpConnectGracefullyStopped {
 
 export function amqpConnectError(options: AMQPOptions, message: string): AmqpConnectError {
   let errorString = `Connection to AMQP server failed.\noptions:\n`;
-  errorString += JSON.stringify(omit(options, ['password']));
+  const { password, ...restOptions } = options;
+  errorString += JSON.stringify(restOptions);
   errorString += `\nerror: ${message}`;
 
   return new AmqpConnectError(errorString);
