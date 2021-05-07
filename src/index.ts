@@ -77,3 +77,5 @@ export function createClient(options: CreateServiceOptions): Client {
 
 export { default as createMessageError } from './create-error';
 export { default as connectService, ServiceConnection } from './service';
+export { MessageHandlerOptions } from './message';
+export { AMQPOptions as ConnectOptions } from './adapters/amqp-node';
