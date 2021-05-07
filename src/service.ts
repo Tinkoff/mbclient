@@ -333,7 +333,7 @@ export class ServiceConnection extends EventEmitter {
 
     if (recipients.length) {
       await Promise.all(
-        recipients.map(async recipient => connection.sendToQueue(recipient, content, computedOptions))
+        recipients.map(recipient => connection.sendToQueue(recipient, content, computedOptions))
       );
       return;
     }
@@ -411,10 +411,10 @@ export class ServiceConnection extends EventEmitter {
    *    ack();
    * });
    */
-  async subscribe(onConsume: MessageHandler): Promise<void> {
+  subscribe(onConsume: MessageHandler): Promise<void> {
     this.setActionHandler('defaultAction', onConsume);
 
-    await this.initQueue(this.name);
+    return this.initQueue(this.name);
   }
 
   /**

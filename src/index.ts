@@ -41,8 +41,8 @@ export function createClient(options: CreateServiceOptions): Client {
   const { service, connection } = connect(options);
 
   return {
-    send: async (clientSendMessageOptions: ClientSendMessage): Promise<void> =>
-      connection.then(async () => {
+    send: (clientSendMessageOptions: ClientSendMessage): Promise<void> =>
+      connection.then(() => {
         const { payload, action, requestId, recipients = [], correlationId, routingKey, isOriginalContent = false } = clientSendMessageOptions;
         const sendMessageOptions = {
           replyTo: serviceName,
@@ -60,16 +60,16 @@ export function createClient(options: CreateServiceOptions): Client {
         return service.postMessage(recipients, payload, sendMessageOptions);
       }),
 
-    consume: async (callback: MessageHandler): Promise<void> =>
-      connection.then(async () => service.subscribe(callback)),
+    consume: (callback: MessageHandler): Promise<void> =>
+      connection.then(() => service.subscribe(callback)),
 
-    consumeByAction: async (
+    consumeByAction: (
       actionType: string,
       callback: (options: MessageHandlerOptions) => Promise<void>
-    ): Promise<void> => connection.then(async () => service.subscribeOn(actionType, callback)),
+    ): Promise<void> => connection.then(() => service.subscribeOn(actionType, callback)),
 
-    cancel: async (): Promise<void> => connection.then(async () => service.unsubscribe()),
-    close: async (): Promise<void> => service.close(),
+    cancel: (): Promise<void> => connection.then(() => service.unsubscribe()),
+    close: (): Promise<void> => service.close(),
     on: service.on.bind(service),
     once: service.on.bind(service)
   };

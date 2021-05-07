@@ -55,12 +55,9 @@ export function amqpConnectGracefullyStopped(): AmqpConnectGracefullyStopped {
 }
 
 export function amqpConnectError(options: AMQPOptions, message: string): AmqpConnectError {
-  let errorString = `Connection to AMQP server failed.\noptions:\n`;
   const { password, ...restOptions } = options;
-  errorString += JSON.stringify(restOptions);
-  errorString += `\nerror: ${message}`;
 
-  return new AmqpConnectError(errorString);
+  return new AmqpConnectError(`Connection to AMQP server failed.\nOptions:\n${JSON.stringify(restOptions)}\nError: ${message}`);
 }
 
 export function emptyMessageError(): EmptyMessageError {
