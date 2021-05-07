@@ -6,7 +6,7 @@ it('should resolve after specified number of milliseconds', async () => {
   expect.assertions(1);
   const time = 2000;
   const pendingPromise = timeout(time).then(resolved => {
-    expect(resolved).toBeUndefined();
+    return expect(resolved).toBeUndefined();
   });
   jest.runAllTimers();
 

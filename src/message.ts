@@ -142,7 +142,7 @@ export interface RawMessage extends MessageBase {
 }
 
 export interface Message extends MessageBase {
-  content: object;
+  content: unknown;
 }
 
 export interface MessageHandlerOptions {
