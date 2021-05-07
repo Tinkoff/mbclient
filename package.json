@@ -35,7 +35,6 @@
   },
   "dependencies": {
     "amqplib": "^0.7.1",
-    "lodash": "^4.17.15",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -43,7 +42,6 @@
     "@semantic-release/git": "^9.0.0",
     "@types/amqplib": "^0.5.17",
     "@types/jest": "^26.0.23",
-    "@types/lodash": "^4.14.146",
     "@types/node": "^10",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.22.1",
