@@ -1,8 +1,7 @@
-import uuid from 'uuid';
+import { v4 as uuid } from 'uuid';
 import omit from 'lodash/omit';
 import defaultsDeep from 'lodash/defaultsDeep';
 import EventEmitter from 'events';
-import { isBuffer } from 'util';
 
 import timeout from './timeout';
 import randomPickConnectionString from './random-pick';
@@ -317,7 +316,7 @@ export class ServiceConnection extends EventEmitter {
     }
     this.log.info(`[amqp-client] send message to ${recipients.toString()}\n`, options);
     const defaultMessageOptions = {
-      messageId: uuid.v4(),
+      messageId: uuid(),
       timestamp: Date.now(),
       persistent: true,
       replyTo: this.name
@@ -328,7 +327,7 @@ export class ServiceConnection extends EventEmitter {
     const computedOptions = defaultsDeep({}, options, defaultMessageOptions);
     const connection = await this.connection;
 
-    const content = isOriginalContent && isBuffer(message) ? message : Buffer.from(JSON.stringify(message));
+    const content = isOriginalContent && Buffer.isBuffer(message) ? message : Buffer.from(JSON.stringify(message));
 
     if (recipients.length) {
       await Promise.all(
