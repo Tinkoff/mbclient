@@ -9,3 +9,5 @@ jobs:
         with:
           fetch-depth: 5
       - uses: wagoid/commitlint-github-action@v3
+        with:
+          firstParent: false
