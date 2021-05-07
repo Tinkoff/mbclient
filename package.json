@@ -22,7 +22,7 @@
     "clean": "rm -rf dist",
     "build": "tsc",
     "watch": "tsc -w",
-    "lint": "tslint --project . \"src/**/*.ts\"",
+    "lint": "eslint src --ext .ts --max-warnings 0",
     "check": "npm run lint && npm run test:unit",
     "test:unit": "jest --forceExit --coverage --verbose --detectOpenHandles --passWithNoTests",
     "test:ci": "npm run test:unit -- --coverageReporters=text-lcov | coveralls",
@@ -31,7 +31,7 @@
     "semantic-release": "semantic-release"
   },
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=10.0.0"
   },
   "dependencies": {
     "amqplib": "^0.5.5",
@@ -41,19 +41,25 @@
   "devDependencies": {
     "@semantic-release/changelog": "^5.0.1",
     "@semantic-release/git": "^9.0.0",
-    "@types/amqplib": "^0.5.13",
+    "@types/amqplib": "^0.5.17",
     "@types/jest": "^25.2.3",
     "@types/lodash": "^4.14.146",
-    "@types/node": "^8.10.59",
+    "@types/node": "^10",
     "@types/uuid": "^3.4.6",
+    "@typescript-eslint/eslint-plugin": "^4.22.1",
+    "@typescript-eslint/parser": "^4.22.1",
     "coveralls": "^3.1.0",
     "cz-conventional-changelog": "^3.0.2",
+    "eslint": "^7.25.0",
+    "eslint-plugin-eslint-comments": "^3.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.3.6",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
     "jest": "^25.5.4",
     "semantic-release": "^17.0.8",
     "ts-jest": "^25.5.1",
     "ts-node": "^8.4.1",
-    "tslint": "^5.20.1",
-    "tslint-config-unional": "^0.10.0",
     "typescript": "^3.9.3"
   },
   "config": {

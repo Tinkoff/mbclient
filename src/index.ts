@@ -6,13 +6,13 @@ import { MessageHandlerOptions, MessageHandler } from './message';
 export interface CreateServiceOptions {
   appId?: string;
   serviceName: string;
-  logger: Logger;
+  logger?: Logger;
   connectOptions: AMQPOptions;
 }
 
 export interface ClientSendMessage {
   action: string;
-  payload: any;
+  payload: unknown;
   requestId?: string;
   recipients?: string[];
   correlationId?: string;
@@ -20,6 +20,7 @@ export interface ClientSendMessage {
   isOriginalContent?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Listener = (eventName: string, listener: (...args: any[]) => void) => void;
 
 export interface Client {
@@ -67,7 +68,7 @@ export function createClient(options: CreateServiceOptions): Client {
       callback: (options: MessageHandlerOptions) => Promise<void>
     ): Promise<void> => connection.then(async () => service.subscribeOn(actionType, callback)),
 
-    cancel: async (): Promise<any> => connection.then(async () => service.unsubscribe()),
+    cancel: async (): Promise<void> => connection.then(async () => service.unsubscribe()),
     close: async (): Promise<void> => service.close(),
     on: service.on.bind(service),
     once: service.on.bind(service)
