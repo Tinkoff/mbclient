@@ -42,7 +42,7 @@ export class EmptyMessageError extends Error {
 
 export class ConnectionNotInitialized extends Error {
   constructor() {
-    super('Connection was not ininialized with connect() method.');
+    super('Connection was not initialized with connect() method.');
   }
 }
 
@@ -64,9 +64,7 @@ export function amqpConnectError(options: AMQPOptions, message: string): AmqpCon
 }
 
 export function emptyMessageError(): EmptyMessageError {
-  const errorString = `received an empty message.
-                      looks like connection was lost or vhost was deleted,
-                      cancelling subscriptions to queues`;
+  const errorString = `Received an empty message. Looks like connection was lost or vhost was deleted, cancelling subscriptions to queues`;
 
   return new EmptyMessageError(errorString);
 }

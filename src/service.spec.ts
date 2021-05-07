@@ -127,6 +127,12 @@ describe('#assertServiceQueue', () => {
 
     expect(amqpConnection.assertQueue).lastCalledWith('dispatcher', { durable: true });
   });
+
+  it('should throw if connection not initialized', async () => {
+    const notInitializedServiceConnection = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+
+    await expect(notInitializedServiceConnection.assertServiceQueue()).rejects.toThrowError('Connection was not initialized with connect() method.');
+  });
 });
 
 describe('#getConnection', () => {
@@ -483,6 +489,10 @@ describe('#validateMessage', () => {
     const validateMessage = ServiceConnection.validateMessage.bind(null, messageMock);
 
     expect(validateMessage).not.toThrow();
+  });
+
+  it('should throw if message is empty', () => {
+    expect(() => ServiceConnection.validateMessage(null)).toThrowError('Received an empty message. Looks like connection was lost or vhost was deleted, cancelling subscriptions to queues');
   });
 });
 
