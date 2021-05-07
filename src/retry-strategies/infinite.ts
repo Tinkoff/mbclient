@@ -1,3 +1,3 @@
-const infiniteRetryStrategy = (attempt: number): number => 1000;
+const infiniteRetryStrategy = (): number => 1000;
 
 export default infiniteRetryStrategy;

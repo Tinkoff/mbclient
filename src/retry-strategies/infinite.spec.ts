@@ -6,7 +6,7 @@ describe('#infiniteRetryStrategy', () => {
     });
 
     it('returns a number', () => {
-        const delay = infiniteRetryStrategy(1);
+        const delay = infiniteRetryStrategy();
 
         expect(typeof delay).toBe('number');
         expect(delay).toBe(1000);

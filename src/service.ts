@@ -2,6 +2,7 @@ import uuid from 'uuid';
 import omit from 'lodash/omit';
 import defaultsDeep from 'lodash/defaultsDeep';
 import EventEmitter from 'events';
+import { isBuffer } from 'util';
 
 import timeout from './timeout';
 import randomPickConnectionString from './random-pick';
@@ -15,7 +16,12 @@ import {
 } from './errors';
 import { RawMessage, Message, MessageOptions, MessageHandlerOptions, MessageHandler } from './message';
 import { ConnectionStatus } from './connection';
-import { AMQPAdapter, AMQPOptions, AMQPConnection } from './adapters/amqp-node';
+import {
+    AMQPAdapter,
+    AMQPOptions,
+    AMQPConnection,
+    QueueOptions
+} from './adapters/amqp-node';
 import { Logger } from './logger';
 import defaultRetryStrategy from './retry-strategies/default';
 
@@ -25,7 +31,7 @@ export class ServiceConnection extends EventEmitter {
   /**
    * Validate AMQP message against service rules
    */
-  static validateMessage(message: Message): void | never {
+  static validateMessage(message: Message | null): void | never {
     const isEmptyMessage = (): boolean => message === null;
 
     if (isEmptyMessage()) {
@@ -37,8 +43,8 @@ export class ServiceConnection extends EventEmitter {
    * The method of converting input content, in case of an error, returns an object with a string placed inside
    * @param {Buffer} content
    */
-  static getContent(content: Buffer): {} {
-    let data = {};
+  static getContent(content: Buffer): unknown {
+    let data;
     try {
       data = JSON.parse(content.toString());
     } catch (ignore) {
@@ -60,7 +66,7 @@ export class ServiceConnection extends EventEmitter {
     return exchange;
   }
 
-  static topicExchange: string = 'dispatcher';
+  static topicExchange = 'dispatcher';
 
   name: string;
   amqp: AMQPAdapter;
@@ -70,8 +76,9 @@ export class ServiceConnection extends EventEmitter {
     [queueName: string]: string;
   } = {};
   handlers: {
-    [handlerName: string]: MessageHandler;
-  } = {};
+    defaultAction: MessageHandler;
+    [handlerName: string]: MessageHandler | undefined;
+  };
   options: AMQPOptions;
   connection: Promise<AMQPConnection> | null = null;
 
@@ -105,14 +112,17 @@ export class ServiceConnection extends EventEmitter {
    *
    * In standalone mode no additional properties are provided
    */
-  getQueueOptions(): any {
+  getQueueOptions(): QueueOptions {
     const options = {
       durable: true
-    } as any;
+    };
 
     if (this.isClusterConnection()) {
-      options.arguments = {
-        'ha-mode': 'all'
+      return {
+        ...options,
+        arguments: {
+          'ha-mode': 'all',
+        }
       };
     }
 
@@ -192,10 +202,10 @@ export class ServiceConnection extends EventEmitter {
       await timeout(retryStrategy(attempt));
 
       this.log.error(`[amqp-connection] ${error.message}`, error);
-      this.log.info(`[amqp-connection] Retry connection to RabbitMQ. Attemt ${attempt}/${maxReconnects}`);
+      this.log.info(`[amqp-connection] Retry connection to RabbitMQ. Attempt ${attempt}/${maxReconnects}`);
 
       if (attempt > maxReconnects) {
-        throw amqpConnectError(this.options, 'Maximum attemts exceeded.');
+        throw amqpConnectError(this.options, 'Maximum attempts exceeded.');
       }
 
       return this.getConnection(attempt + 1);
@@ -207,7 +217,7 @@ export class ServiceConnection extends EventEmitter {
   /**
    * Handle connection and channel events
    */
-  connectionEventHandler(eventName: string, eventMessage: any): void {
+  connectionEventHandler(eventName: string, eventMessage: Message): void {
     switch (eventName) {
       case 'close':
         this.handleConnectionClose(eventMessage).catch(this.log.error);
@@ -219,7 +229,7 @@ export class ServiceConnection extends EventEmitter {
   /**
    * Handle connection errors
    */
-  async handleConnectionClose(eventMessage: any): Promise<void> {
+  async handleConnectionClose(eventMessage: Message): Promise<void> {
     this.log.error('[amqp-connection] Connection closed.', eventMessage, omit(this.options, ['password']));
 
     this.emit(ConnectionStatus.DISCONNECTED);
@@ -260,7 +270,7 @@ export class ServiceConnection extends EventEmitter {
       : this.getConnectionStringStandalone();
 
     if (!connectionString) {
-      throw amqpConnectError('Wrong configuration. Either cluster or standalone mode should be enabled', this.options);
+      throw amqpConnectError(this.options, 'Wrong configuration. Either cluster or standalone mode should be enabled');
     }
 
     return connectionString;
@@ -301,7 +311,7 @@ export class ServiceConnection extends EventEmitter {
    * service.postMessage(['news'], 'message', { persistent: true })
    * service.postMessage([], 'message', { replyTo: 'news' })
    */
-  async postMessage(recipients: string[] = [], message: any, options: Partial<MessageOptions> = {}): Promise<any> {
+  async postMessage(recipients: string[] = [], message: unknown, options: Partial<MessageOptions> = {}): Promise<void> {
     if (!this.connection) {
       throw new ConnectionNotInitialized();
     }
@@ -318,12 +328,13 @@ export class ServiceConnection extends EventEmitter {
     const computedOptions = defaultsDeep({}, options, defaultMessageOptions);
     const connection = await this.connection;
 
-    const content = isOriginalContent ? message : Buffer.from(JSON.stringify(message));
+    const content = isOriginalContent && isBuffer(message) ? message : Buffer.from(JSON.stringify(message));
 
     if (recipients.length) {
-      return Promise.all(
+      await Promise.all(
         recipients.map(async recipient => connection.sendToQueue(recipient, content, computedOptions))
       );
+      return;
     }
 
     return connection.publish(
@@ -387,7 +398,7 @@ export class ServiceConnection extends EventEmitter {
    * Unregister action handler from service
    */
   getActionHandler(handlerName: string): (options: MessageHandlerOptions) => Promise<void> {
-    return this.handlers[handlerName] || this.handlers.defaultAction;
+    return this.handlers[handlerName] ?? this.handlers.defaultAction;
   }
 
   /**
@@ -450,7 +461,7 @@ export class ServiceConnection extends EventEmitter {
   /**
    * Safely unsubscribe from queue
    */
-  async unsubscribe(): Promise<any> {
+  async unsubscribe(): Promise<void> {
     if (!this.connection) {
       throw new ConnectionNotInitialized();
     }

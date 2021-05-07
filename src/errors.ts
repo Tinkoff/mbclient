@@ -1,9 +1,10 @@
 import omit from 'lodash/omit';
+import { AMQPOptions } from './adapters/amqp-node';
 
 export class ConnectServicesError extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -11,9 +12,9 @@ export class ConnectServicesError extends Error {
 }
 
 export class AmqpConnectError extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -21,9 +22,9 @@ export class AmqpConnectError extends Error {
 }
 
 export class AmqpConnectGracefullyStopped extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -31,9 +32,9 @@ export class AmqpConnectGracefullyStopped extends Error {
 }
 
 export class EmptyMessageError extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -46,7 +47,7 @@ export class ConnectionNotInitialized extends Error {
   }
 }
 
-export function connectServicesError(message: any): ConnectServicesError {
+export function connectServicesError(message: unknown): ConnectServicesError {
   return new ConnectServicesError('Error connecting services.', message);
 }
 
@@ -54,7 +55,7 @@ export function amqpConnectGracefullyStopped(): AmqpConnectGracefullyStopped {
   return new AmqpConnectGracefullyStopped('Connection process gracefully stopped.');
 }
 
-export function amqpConnectError(options: any, message: any): AmqpConnectError {
+export function amqpConnectError(options: AMQPOptions, message: string): AmqpConnectError {
   let errorString = `Connection to AMQP server failed.\noptions:\n`;
   errorString += JSON.stringify(omit(options, ['password']));
   errorString += `\nerror: ${message}`;

@@ -17,15 +17,30 @@ export interface AMQPOptions {
   exchange?: string;
 }
 
+export interface QueueOptions {
+  durable: boolean;
+  arguments?: {
+    'ha-mode'?: string;
+  }
+}
+
+export interface ExchangeOptions {
+  durable: boolean;
+}
+
+interface ConsumeResult {
+  consumerTag: string;
+}
+
 export interface AMQPConnection {
-  assertQueue: (queue: string, options: AMQPOptions) => Promise<any>;
-  assertExchange: (exchange: string, queue: string, options: any) => Promise<any>;
+  assertQueue: (queue: string, options: QueueOptions) => Promise<void>;
+  assertExchange: (exchange: string, queue: string, options: ExchangeOptions) => Promise<void>;
   ack: (message: Message) => void;
   nack: (message: Message) => void;
-  sendToQueue: (queue: string, message: Buffer, options: MessageOptions) => Promise<any>;
-  bindQueue: (queue: string, exchange: string, routingRegExp: string) => Promise<any>;
-  publish: (exchange: string, routingKey: string, message: Buffer, options: MessageOptions) => Promise<any>;
-  consume: (queue: string, handler: (message: RawMessage) => void) => Promise<any>;
+  sendToQueue: (queue: string, message: Buffer, options: MessageOptions) => Promise<void>;
+  bindQueue: (queue: string, exchange: string, routingRegExp: string) => Promise<void>;
+  publish: (exchange: string, routingKey: string, message: Buffer, options: MessageOptions) => Promise<void>;
+  consume: (queue: string, handler: (message: RawMessage) => void) => Promise<ConsumeResult>;
   prefetch: (maxMessages: number) => Promise<void>;
   cancel: (consumerTag: string) => Promise<void>;
   close: () => Promise<void>;
@@ -44,7 +59,8 @@ const getAMQPNodeAdapter = (): AMQPAdapter => {
     async connect(
       connectionString: string,
       options: AMQPOptions,
-      eventHandler: (eventName: string, message?: any, ...args: any[]) => void
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      eventHandler: (eventName: string, message: Message, ...args: any[]) => void
     ): Promise<AMQPConnection> {
       const connection = await connect(
         connectionString,
@@ -53,11 +69,11 @@ const getAMQPNodeAdapter = (): AMQPAdapter => {
       const channel = await connection.createChannel();
 
       CONNECTION_EVENTS.forEach(eventName => {
-        connection.on(eventName, (...args) => eventHandler(eventName, ...args));
+        connection.on(eventName, (message: Message, ...args) => eventHandler(eventName, message, ...args));
       });
 
       CHANNEL_EVENTS.forEach(eventName => {
-        channel.on(eventName, (...args) => eventHandler(eventName, ...args));
+        channel.on(eventName, (message: Message, ...args) => eventHandler(eventName, message, ...args));
       });
 
       await channel.prefetch(1);
