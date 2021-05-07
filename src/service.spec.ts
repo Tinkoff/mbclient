@@ -18,7 +18,7 @@ const amqpConnection = {
   nack: jest.fn(),
   assertExchange: jest.fn(),
   bindQueue: jest.fn(),
-  cancel: jest.fn().mockReturnValue(true),
+  cancel: jest.fn(),
   close: jest.fn(),
   consume: jest.fn().mockReturnValue({ consumerTag: 'tag' }),
   prefetch: jest.fn(),
@@ -531,11 +531,10 @@ describe('#unsubscribe', () => {
   it('cancels connection with queue consumer tag', async () => {
     serviceConnection.queuesConsumerTags.dispatcher = 'ssdSDGHISdfadsg';
 
-    const result = await serviceConnection.unsubscribe();
+    await serviceConnection.unsubscribe();
 
     expect(amqpConnection.cancel).lastCalledWith('ssdSDGHISdfadsg');
     expect(serviceConnection.queuesConsumerTags.input).toBeUndefined();
-    expect(result).toBe(true);
   });
 });
 

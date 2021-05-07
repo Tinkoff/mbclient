@@ -77,7 +77,7 @@ export class ServiceConnection extends EventEmitter {
   } = {};
   handlers: {
     defaultAction: MessageHandler;
-    [handlerName: string]: MessageHandler | undefined;
+    [handlerName: string]: MessageHandler;
   };
   options: AMQPOptions;
   connection: Promise<AMQPConnection> | null = null;
@@ -467,12 +467,13 @@ export class ServiceConnection extends EventEmitter {
     }
     this.log.warn(`[amqp-client] unsubscribing from input queue of "${this.name}"`);
 
-    let result;
-
     try {
       const connection = await this.connection;
+      const queue = this.queuesConsumerTags[this.name];
 
-      result = await connection.cancel(this.queuesConsumerTags[this.name]);
+      if (queue !== undefined) {
+        await connection.cancel(queue);
+      }
 
       this.log.info(`[amqp-connection] unsubscribed from queue "${this.name}"\n`);
     } catch (error) {
@@ -480,8 +481,6 @@ export class ServiceConnection extends EventEmitter {
     } finally {
       delete this.queuesConsumerTags[this.name];
     }
-
-    return result;
   }
 
   async close(): Promise<void> {
