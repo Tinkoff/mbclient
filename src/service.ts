@@ -1,6 +1,4 @@
 import { v4 as uuid } from 'uuid';
-import omit from 'lodash/omit';
-import defaultsDeep from 'lodash/defaultsDeep';
 import EventEmitter from 'events';
 
 import timeout from './timeout';
@@ -99,7 +97,7 @@ export class ServiceConnection extends EventEmitter {
   }
 
   hasHandlers(): boolean {
-    return Object.keys(omit(this.handlers, ['defaultAction'])).length > 0;
+    return Object.keys(this.handlers).some(name => name !== 'defaultAction');
   }
 
   /**
@@ -229,7 +227,8 @@ export class ServiceConnection extends EventEmitter {
    * Handle connection errors
    */
   async handleConnectionClose(eventMessage: Message): Promise<void> {
-    this.log.error('[amqp-connection] Connection closed.', eventMessage, omit(this.options, ['password']));
+    const { password, ...restOptions } = this.options;
+    this.log.error('[amqp-connection] Connection closed.', eventMessage, restOptions);
 
     this.emit(ConnectionStatus.DISCONNECTED);
 
@@ -319,12 +318,15 @@ export class ServiceConnection extends EventEmitter {
       messageId: uuid(),
       timestamp: Date.now(),
       persistent: true,
-      replyTo: this.name
+      replyTo: this.name,
+      headers: {
+        recipients: ''
+      },
     };
     const { headers: { action = 'default' } = {} } = options;
     const { headers: { isOriginalContent = false } = {} } = options;
     const { headers: { routingKey = `${this.name}.${action}` } = {} } = options;
-    const computedOptions = defaultsDeep({}, options, defaultMessageOptions);
+    const computedOptions = {...defaultMessageOptions, ...options};
     const connection = await this.connection;
 
     const content = isOriginalContent && Buffer.isBuffer(message) ? message : Buffer.from(JSON.stringify(message));
