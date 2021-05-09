@@ -1,3 +1,25 @@
+# [2.0.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.1.2...v2.0.0) (2021-05-09)
+
+
+### Bug Fixes
+
+* remove redundant async ([2eaf7c9](https://github.com/TinkoffCreditSystems/mbclient/commit/2eaf7c904305fae047a4fdf898ce8f6239824057))
+
+
+### Features
+
+* export `MessageHandlerOptions` and `AMQPOptions` ([b228731](https://github.com/TinkoffCreditSystems/mbclient/commit/b22873165751f847d6cc7bfa0b84b015ca2540fb))
+* tslint to eslint ([feab382](https://github.com/TinkoffCreditSystems/mbclient/commit/feab3823e03d7b20fe930e270d9fc2a3bd3478f2))
+
+
+### BREAKING CHANGES
+
+* drop Node.js v8 support.
+
+Node.js v14 build added.
+
+Some types made more exact (instead of `any`).
+
 ## [1.1.2](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.1.1...v1.1.2) (2020-07-13)
 
 
