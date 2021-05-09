@@ -12,7 +12,7 @@ import {
 
 it('should have amqpConnectError', () => {
   expect(typeof amqpConnectError).toBe('function');
-  const error = amqpConnectError({}, 'some error');
+  const error = amqpConnectError({ username: 'guest', password: 'guest' }, 'some error');
   expect(error).toBeInstanceOf(AmqpConnectError);
 });
 

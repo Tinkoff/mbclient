@@ -18,7 +18,7 @@ const amqpConnection = {
   nack: jest.fn(),
   assertExchange: jest.fn(),
   bindQueue: jest.fn(),
-  cancel: jest.fn().mockReturnValue(true),
+  cancel: jest.fn(),
   close: jest.fn(),
   consume: jest.fn().mockReturnValue({ consumerTag: 'tag' }),
   prefetch: jest.fn(),
@@ -30,6 +30,7 @@ let serviceConnection: ServiceConnection;
 beforeEach(() => {
   serviceConnection = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
   serviceConnection.connection = Promise.resolve<AMQPConnection>(amqpConnection);
+  logger.error.mockClear();
 });
 
 describe('#constructor', () => {
@@ -126,6 +127,12 @@ describe('#assertServiceQueue', () => {
 
     expect(amqpConnection.assertQueue).lastCalledWith('dispatcher', { durable: true });
   });
+
+  it('should throw if connection not initialized', async () => {
+    const notInitializedServiceConnection = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+
+    await expect(notInitializedServiceConnection.assertServiceQueue()).rejects.toThrowError('Connection was not initialized with connect() method.');
+  });
 });
 
 describe('#getConnection', () => {
@@ -162,10 +169,11 @@ describe('#getConnection', () => {
 describe('#connectionEventHandler', () => {
   it('calls connection error handler on error event', () => {
     serviceConnection.handleConnectionClose = jest.fn().mockResolvedValue({});
+    const message = { content: 'message' };
 
-    serviceConnection.connectionEventHandler('close', 'message');
+    serviceConnection.connectionEventHandler('close', message as any);
 
-    expect(serviceConnection.handleConnectionClose).lastCalledWith('message');
+    expect(serviceConnection.handleConnectionClose).lastCalledWith(message);
   });
 });
 
@@ -173,9 +181,12 @@ describe('#handleConnectionError', () => {
   it('logs error to console', () => {
     serviceConnection.unsubscribe = jest.fn();
     serviceConnection.connect = jest.fn();
-    serviceConnection.handleConnectionClose('message');
+    const message = { content: 'message' };
 
-    expect(logger.error).toBeCalled();
+    serviceConnection.handleConnectionClose(message as any);
+
+    const { password, ...loggedOptions } = optionsMock;
+    expect(logger.error).toBeCalledWith('[amqp-connection] Connection closed.', message, loggedOptions);
   });
 });
 
@@ -298,6 +309,9 @@ Array [
     "type": "Buffer",
   },
   Object {
+    "headers": Object {
+      "recipients": "",
+    },
     "messageId": "42",
     "persistent": true,
     "replyTo": "dispatcher",
@@ -338,6 +352,9 @@ Array [
     "type": "Buffer",
   },
   Object {
+    "headers": Object {
+      "recipients": "",
+    },
     "messageId": "43",
     "persistent": true,
     "replyTo": "dispatcher",
@@ -399,7 +416,7 @@ Array [
 
   it('calls action handler', async () => {
     const handler = jest.fn();
-    serviceConnection.getActionHandler = (): jest.Mock<any, any> => handler;
+    serviceConnection.getActionHandler = (): jest.Mock => handler;
 
     await serviceConnection.messageHandler(messageMock);
 
@@ -435,7 +452,7 @@ Array [
 
 describe('#setActionHandler', () => {
   it('sets action handler to hash map', () => {
-    const handlerMock = async (options: any): Promise<void> => {};
+    const handlerMock = async (): Promise<void> => undefined;
 
     serviceConnection.setActionHandler('handler1', handlerMock);
 
@@ -445,7 +462,7 @@ describe('#setActionHandler', () => {
 
 describe('#getActionHandler', () => {
   it('gets action handler from hash map', () => {
-    const handlerMock = async (_options: any): Promise<void> => {};
+    const handlerMock = async (): Promise<void> => undefined;
 
     serviceConnection.handlers.handler1 = handlerMock;
 
@@ -473,6 +490,10 @@ describe('#validateMessage', () => {
 
     expect(validateMessage).not.toThrow();
   });
+
+  it('should throw if message is empty', () => {
+    expect(() => ServiceConnection.validateMessage(null)).toThrowError('Received an empty message. Looks like connection was lost or vhost was deleted, cancelling subscriptions to queues');
+  });
 });
 
 describe('#subscribe', () => {
@@ -480,7 +501,7 @@ describe('#subscribe', () => {
     serviceConnection.initQueue = jest.fn().mockResolvedValue(true);
     serviceConnection.setActionHandler = jest.fn().mockResolvedValue(true);
 
-    await serviceConnection.subscribe(async () => {});
+    await serviceConnection.subscribe(async () => undefined);
 
     expect(serviceConnection.setActionHandler).lastCalledWith('defaultAction', expect.any(Function));
   });
@@ -491,7 +512,7 @@ describe('#subscribeOn', () => {
     serviceConnection.initQueue = jest.fn().mockResolvedValue(true);
     serviceConnection.setActionHandler = jest.fn().mockResolvedValue(true);
 
-    await serviceConnection.subscribeOn('actionAction', async () => {});
+    await serviceConnection.subscribeOn('actionAction', async () => undefined);
 
     expect(amqpConnection.bindQueue).lastCalledWith('dispatcher', 'dispatcher', '*.actionAction');
     expect(serviceConnection.setActionHandler).lastCalledWith('actionAction', expect.any(Function));
@@ -503,8 +524,8 @@ describe('#initQueue', () => {
     serviceConnection.consumeQueue = jest.fn();
 
     serviceConnection.handlers = {
-      defaultAction: async (): Promise<void> => {},
-      testAction: async (): Promise<void> => {}
+      defaultAction: async (): Promise<void> => undefined,
+      testAction: async (): Promise<void> => undefined
     };
 
     await serviceConnection.initQueue('input');
@@ -526,17 +547,16 @@ describe('#unsubscribe', () => {
   it('cancels connection with queue consumer tag', async () => {
     serviceConnection.queuesConsumerTags.dispatcher = 'ssdSDGHISdfadsg';
 
-    const result = await serviceConnection.unsubscribe();
+    await serviceConnection.unsubscribe();
 
     expect(amqpConnection.cancel).lastCalledWith('ssdSDGHISdfadsg');
     expect(serviceConnection.queuesConsumerTags.input).toBeUndefined();
-    expect(result).toBe(true);
   });
 });
 
 describe('#consumeQueue', () => {
   it('consumes queue and saves its consumer tag to hash map', async () => {
-    const result = await serviceConnection.consumeQueue('dispatcher', () => {});
+    const result = await serviceConnection.consumeQueue('dispatcher', () => undefined);
 
     expect(amqpConnection.prefetch).lastCalledWith(1);
     expect(amqpConnection.consume).lastCalledWith('dispatcher', expect.any(Function));

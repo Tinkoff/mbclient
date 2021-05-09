@@ -6,13 +6,13 @@ import { MessageHandlerOptions, MessageHandler } from './message';
 export interface CreateServiceOptions {
   appId?: string;
   serviceName: string;
-  logger: Logger;
+  logger?: Logger;
   connectOptions: AMQPOptions;
 }
 
 export interface ClientSendMessage {
   action: string;
-  payload: any;
+  payload: unknown;
   requestId?: string;
   recipients?: string[];
   correlationId?: string;
@@ -20,6 +20,7 @@ export interface ClientSendMessage {
   isOriginalContent?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Listener = (eventName: string, listener: (...args: any[]) => void) => void;
 
 export interface Client {
@@ -40,8 +41,8 @@ export function createClient(options: CreateServiceOptions): Client {
   const { service, connection } = connect(options);
 
   return {
-    send: async (clientSendMessageOptions: ClientSendMessage): Promise<void> =>
-      connection.then(async () => {
+    send: (clientSendMessageOptions: ClientSendMessage): Promise<void> =>
+      connection.then(() => {
         const { payload, action, requestId, recipients = [], correlationId, routingKey, isOriginalContent = false } = clientSendMessageOptions;
         const sendMessageOptions = {
           replyTo: serviceName,
@@ -59,16 +60,16 @@ export function createClient(options: CreateServiceOptions): Client {
         return service.postMessage(recipients, payload, sendMessageOptions);
       }),
 
-    consume: async (callback: MessageHandler): Promise<void> =>
-      connection.then(async () => service.subscribe(callback)),
+    consume: (callback: MessageHandler): Promise<void> =>
+      connection.then(() => service.subscribe(callback)),
 
-    consumeByAction: async (
+    consumeByAction: (
       actionType: string,
       callback: (options: MessageHandlerOptions) => Promise<void>
-    ): Promise<void> => connection.then(async () => service.subscribeOn(actionType, callback)),
+    ): Promise<void> => connection.then(() => service.subscribeOn(actionType, callback)),
 
-    cancel: async (): Promise<any> => connection.then(async () => service.unsubscribe()),
-    close: async (): Promise<void> => service.close(),
+    cancel: (): Promise<void> => connection.then(() => service.unsubscribe()),
+    close: (): Promise<void> => service.close(),
     on: service.on.bind(service),
     once: service.on.bind(service)
   };
@@ -76,3 +77,5 @@ export function createClient(options: CreateServiceOptions): Client {
 
 export { default as createMessageError } from './create-error';
 export { default as connectService, ServiceConnection } from './service';
+export { MessageHandlerOptions } from './message';
+export { AMQPOptions as ConnectOptions } from './adapters/amqp-node';

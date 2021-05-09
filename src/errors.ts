@@ -1,9 +1,9 @@
-import omit from 'lodash/omit';
+import { AMQPOptions } from './adapters/amqp-node';
 
 export class ConnectServicesError extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -11,9 +11,9 @@ export class ConnectServicesError extends Error {
 }
 
 export class AmqpConnectError extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -21,9 +21,9 @@ export class AmqpConnectError extends Error {
 }
 
 export class AmqpConnectGracefullyStopped extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -31,9 +31,9 @@ export class AmqpConnectGracefullyStopped extends Error {
 }
 
 export class EmptyMessageError extends Error {
-  payload: object;
+  payload: unknown;
 
-  constructor(msg: string, errPayload: object = {}) {
+  constructor(msg: string, errPayload: unknown = {}) {
     super(msg);
 
     this.payload = errPayload;
@@ -42,11 +42,11 @@ export class EmptyMessageError extends Error {
 
 export class ConnectionNotInitialized extends Error {
   constructor() {
-    super('Connection was not ininialized with connect() method.');
+    super('Connection was not initialized with connect() method.');
   }
 }
 
-export function connectServicesError(message: any): ConnectServicesError {
+export function connectServicesError(message: unknown): ConnectServicesError {
   return new ConnectServicesError('Error connecting services.', message);
 }
 
@@ -54,18 +54,14 @@ export function amqpConnectGracefullyStopped(): AmqpConnectGracefullyStopped {
   return new AmqpConnectGracefullyStopped('Connection process gracefully stopped.');
 }
 
-export function amqpConnectError(options: any, message: any): AmqpConnectError {
-  let errorString = `Connection to AMQP server failed.\noptions:\n`;
-  errorString += JSON.stringify(omit(options, ['password']));
-  errorString += `\nerror: ${message}`;
+export function amqpConnectError(options: AMQPOptions, message: string): AmqpConnectError {
+  const { password, ...restOptions } = options;
 
-  return new AmqpConnectError(errorString);
+  return new AmqpConnectError(`Connection to AMQP server failed.\nOptions:\n${JSON.stringify(restOptions)}\nError: ${message}`);
 }
 
 export function emptyMessageError(): EmptyMessageError {
-  const errorString = `received an empty message.
-                      looks like connection was lost or vhost was deleted,
-                      cancelling subscriptions to queues`;
+  const errorString = `Received an empty message. Looks like connection was lost or vhost was deleted, cancelling subscriptions to queues`;
 
   return new EmptyMessageError(errorString);
 }
