@@ -168,7 +168,7 @@ export class ServiceConnection extends EventEmitter {
    */
   async assertTopicExchange(): Promise<void> {
     if (!this.connection) {
-      throw new Error();
+      throw new Error('No connection');
     }
     const connection = await this.connection;
 
