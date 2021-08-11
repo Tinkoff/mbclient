@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v2.0.0...v2.1.0) (2021-08-11)
+
+
+### Features
+
+* **deps:** upgrade amqplib up to 0.8.0 ([#28](https://github.com/TinkoffCreditSystems/mbclient/issues/28)) ([b97c2ef](https://github.com/TinkoffCreditSystems/mbclient/commit/b97c2efc4169a4578d031cf7ca92ca0614f43616))
+
 # [2.0.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v1.1.2...v2.0.0) (2021-05-09)
 
 
