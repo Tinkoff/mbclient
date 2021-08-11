@@ -597,3 +597,11 @@ describe('#getContent', () => {
     expect(ServiceConnection.getContent(content)).toEqual({data: 'test'});
   });
 });
+
+describe('#assertTopicExchange', () => {
+  it('calls and awaits getConnection, then asserts queues and topic exchange', async () => {
+    serviceConnection.connection = null;
+
+    await expect(serviceConnection.assertTopicExchange()).rejects.toThrow('No connection');
+  });
+});

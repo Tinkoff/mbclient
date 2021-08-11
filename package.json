@@ -23,6 +23,7 @@
     "watch": "tsc -w",
     "lint": "eslint src --ext .ts --max-warnings 0",
     "check": "npm run lint && npm run test:unit",
+    "test": "npm run test:unit",
     "test:unit": "jest --coverage --verbose",
     "test:ci": "npm run test:unit -- --coverageReporters=lcov",
     "test:unit:watch": "jest --watch",
