@@ -38,6 +38,14 @@ Array [
     "close",
     [Function],
   ],
+  Array [
+    "blocked",
+    [Function],
+  ],
+  Array [
+    "unblocked",
+    [Function],
+  ],
 ]
 `);
 
