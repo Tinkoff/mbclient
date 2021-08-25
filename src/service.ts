@@ -196,9 +196,9 @@ export class ServiceConnection extends EventEmitter {
 
       this.setConnectionStatus(ConnectionStatus.CONNECTED);
     } catch (error) {
-      await timeout(retryStrategy(attempt));
-
       this.log.error(`[amqp-connection] ${error.message}`, error);
+
+      await timeout(retryStrategy(attempt));
       this.log.info(`[amqp-connection] Retry connection to RabbitMQ. Attempt ${attempt}/${maxReconnects}`);
 
       if (attempt > maxReconnects) {
@@ -220,6 +220,7 @@ export class ServiceConnection extends EventEmitter {
         this.handleConnectionClose(eventMessage).catch(this.log.error);
         break;
       default:
+        this.log.warn({eventName, eventMessage}, '[amqp-connection] Unsupported connection event');
     }
   }
 
