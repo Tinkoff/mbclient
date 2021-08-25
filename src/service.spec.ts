@@ -1,5 +1,9 @@
 import connectService, { ServiceConnection } from './service';
 import { AMQPConnection } from './adapters/amqp-node';
+import { ConnectionStatus } from './connection';
+import { amqpConnectError, amqpConnectGracefullyStopped } from './errors';
+import { Message } from './message';
+import { Logger } from './logger';
 
 const testAdapter = { connect: jest.fn() };
 const optionsMock = {
@@ -147,33 +151,48 @@ describe('#getConnection', () => {
       throw new Error('Connection error');
     };
 
-    try {
-      await serviceConn.getConnection();
-    } catch (err) {
-      // Do nothing
-    }
+    await expect(serviceConn.getConnection()).rejects.toThrow(amqpConnectError(optionsMock, 'Maximum attempts exceeded.'));
 
     expect(retryStrategy).toBeCalledWith(1);
     expect(retryStrategy).toBeCalledWith(2);
   });
 
   it('calls adapter connect method', async () => {
-    serviceConnection.amqp.connect = jest.fn();
+    const mockConnect = jest.fn();
+    const mockConnectionEventHandler = jest.fn();
+
+    serviceConnection.amqp.connect = mockConnect;
+    serviceConnection.connectionEventHandler = mockConnectionEventHandler
 
     await serviceConnection.getConnection();
+    mockConnect.mock.calls[0]?.[2]('close', {});
+    expect(mockConnect).toBeCalled();
+    expect(mockConnectionEventHandler).toBeCalledWith('close', {});
+  });
 
-    expect(serviceConnection.amqp.connect).toBeCalled();
+  it('generate error when status is disconnecting', async () => {
+    const serviceConn = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+    serviceConn.status = ConnectionStatus.DISCONNECTING;
+    await expect(serviceConn.getConnection()).rejects.toThrow(amqpConnectGracefullyStopped());
   });
 });
 
 describe('#connectionEventHandler', () => {
+  const message = { content: 'message' };
+
   it('calls connection error handler on error event', () => {
     serviceConnection.handleConnectionClose = jest.fn().mockResolvedValue({});
-    const message = { content: 'message' };
 
-    serviceConnection.connectionEventHandler('close', message as any);
+    serviceConnection.connectionEventHandler('close', message as unknown as Message);
 
     expect(serviceConnection.handleConnectionClose).lastCalledWith(message);
+  });
+  it('an event other than close is logged with the type warn', () => {
+    const warnStub = jest.fn();
+    serviceConnection.log = {warn: warnStub} as unknown as Logger;
+    serviceConnection.connectionEventHandler('blocked', message as unknown as Message);
+
+    expect(warnStub).toBeCalledWith({eventName: 'blocked', eventMessage: message}, '[amqp-connection] Unsupported connection event');
   });
 });
 
@@ -525,7 +544,6 @@ describe('#initQueue', () => {
 
     serviceConnection.handlers = {
       defaultAction: async (): Promise<void> => undefined,
-      testAction: async (): Promise<void> => undefined
     };
 
     await serviceConnection.initQueue('input');

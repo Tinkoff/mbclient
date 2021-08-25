@@ -2,7 +2,7 @@ import { connect } from 'amqplib';
 
 import { Message, MessageOptions, RawMessage } from '../message';
 
-const CONNECTION_EVENTS = ['error', 'close'];
+const CONNECTION_EVENTS = ['error', 'close', 'blocked', 'unblocked'];
 const CHANNEL_EVENTS = ['error', 'return', 'drain'];
 
 export interface AMQPOptions {
