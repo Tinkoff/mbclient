@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v2.1.0...v2.2.0) (2021-08-25)
+
+
+### Features
+
+* **deps:** add logging of unprocessed events ([#31](https://github.com/TinkoffCreditSystems/mbclient/issues/31)) ([fc2f94a](https://github.com/TinkoffCreditSystems/mbclient/commit/fc2f94aadd32a008a1f6d6385ae06360129abc25))
+
 # [2.1.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v2.0.0...v2.1.0) (2021-08-11)
 
 
