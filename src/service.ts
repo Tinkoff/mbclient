@@ -24,6 +24,8 @@ import defaultRetryStrategy from './retry-strategies/default';
 
 const DEFAULT_HEART_BEAT = 30;
 
+const DEFAULT_ACTION = 'defaultAction';
+
 export class ServiceConnection extends EventEmitter {
   /**
    * Validate AMQP message against service rules
@@ -73,7 +75,7 @@ export class ServiceConnection extends EventEmitter {
     [queueName: string]: string;
   } = {};
   handlers: {
-    defaultAction: MessageHandler;
+    [DEFAULT_ACTION]: MessageHandler;
     [handlerName: string]: MessageHandler;
   };
   options: AMQPOptions;
@@ -88,7 +90,7 @@ export class ServiceConnection extends EventEmitter {
     this.amqp = adapter;
     this.setConnectionStatus(ConnectionStatus.CONNECTING);
     this.handlers = {
-      defaultAction: async ({ message, ack }): Promise<void> => {
+      [DEFAULT_ACTION]: async ({ message, ack }): Promise<void> => {
         ack();
         const { fields } = message; // TODO check for {}
         log.error('[amqp-connection] No action for message', fields);
@@ -97,7 +99,7 @@ export class ServiceConnection extends EventEmitter {
   }
 
   hasHandlers(): boolean {
-    return Object.keys(this.handlers).some(name => name !== 'defaultAction');
+    return Object.keys(this.handlers).some(name => name !== DEFAULT_ACTION);
   }
 
   /**
@@ -143,12 +145,14 @@ export class ServiceConnection extends EventEmitter {
   /**
    * Connect to AMQP server with service options
    */
-  async connect(): Promise<void> {
+  async connect(): Promise<AMQPConnection> {
     this.setConnectionStatus(ConnectionStatus.CONNECTING);
-    this.connection = this.getConnection();
+    const connection = this.connection = this.getConnection();
 
     await this.assertTopicExchange();
     await this.assertServiceQueue();
+
+    return connection;
   }
 
   /**
@@ -236,10 +240,16 @@ export class ServiceConnection extends EventEmitter {
     await this.unsubscribe();
 
     if (this.status !== ConnectionStatus.DISCONNECTING) {
-      await this.connect();
+      const connection = await this.connect();
 
-      if (this.hasHandlers()) {
+      const handlers = Object.keys(this.handlers).filter(name => name !== DEFAULT_ACTION);
+
+      if (handlers.length > 0) {
         await this.initQueue(this.name);
+
+        for (const handler of handlers) {
+          await connection.bindQueue(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${handler}`);
+        }
       }
     }
   }
@@ -361,7 +371,7 @@ export class ServiceConnection extends EventEmitter {
 
       const {
         properties: {
-          headers: { action: messageAction = 'defaultAction' }
+          headers: { action: messageAction = DEFAULT_ACTION }
         }
       } = message;
       const handler = this.getActionHandler(messageAction);
@@ -400,7 +410,7 @@ export class ServiceConnection extends EventEmitter {
    * Unregister action handler from service
    */
   getActionHandler(handlerName: string): (options: MessageHandlerOptions) => Promise<void> {
-    return this.handlers[handlerName] ?? this.handlers.defaultAction;
+    return this.handlers[handlerName] ?? this.handlers[DEFAULT_ACTION];
   }
 
   /**
@@ -413,7 +423,7 @@ export class ServiceConnection extends EventEmitter {
    * });
    */
   subscribe(onConsume: MessageHandler): Promise<void> {
-    this.setActionHandler('defaultAction', onConsume);
+    this.setActionHandler(DEFAULT_ACTION, onConsume);
 
     return this.initQueue(this.name);
   }
@@ -543,7 +553,7 @@ const connectService = (
   options: AMQPOptions,
   serviceName: string,
   log: Logger
-): { service: ServiceConnection; connection: Promise<void> } => {
+): { service: ServiceConnection; connection: Promise<AMQPConnection> } => {
   const service = new ServiceConnection(adapter, options, serviceName, log);
   const connection = service.connect();
 
