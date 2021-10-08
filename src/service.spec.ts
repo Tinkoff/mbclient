@@ -1,7 +1,11 @@
 import connectService, { ServiceConnection } from './service';
 import { AMQPConnection } from './adapters/amqp-node';
 import { ConnectionStatus } from './connection';
-import { amqpConnectError, amqpConnectGracefullyStopped } from './errors';
+import {
+  amqpConnectError,
+  amqpConnectGracefullyStopped,
+  ConnectionNotInitialized
+} from './errors';
 import { Message } from './message';
 import { Logger } from './logger';
 
@@ -177,6 +181,39 @@ describe('#getConnection', () => {
   });
 });
 
+describe('#handleConnectionClose', () => {
+  const message = { content: 'message' };
+
+  it('reconnects and rebinds handlers', async () => {
+    serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
+    serviceConnection.connect = jest.fn();
+    serviceConnection.initQueue = jest.fn();
+
+    await serviceConnection.handleConnectionClose(message as unknown as Message);
+
+    expect(serviceConnection.unsubscribe).toBeCalled();
+    expect(serviceConnection.connect).toBeCalled();
+    expect(serviceConnection.initQueue).not.toBeCalled();
+  });
+
+  it('reconnects and rebinds handlers', async () => {
+    serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
+    const connection = { bindQueue: jest.fn() };
+    serviceConnection.connect = jest.fn().mockResolvedValue(connection);
+    serviceConnection.initQueue = jest.fn();
+
+    const handlerMock = async () => undefined;
+    serviceConnection.setActionHandler('handler1', handlerMock);
+
+    await serviceConnection.handleConnectionClose(message as unknown as Message);
+
+    expect(serviceConnection.unsubscribe).toBeCalled();
+    expect(serviceConnection.connect).toBeCalled();
+    expect(serviceConnection.initQueue).toBeCalled();
+    expect(connection.bindQueue).toBeCalledWith('dispatcher', 'dispatcher', '*.handler1');
+  });
+});
+
 describe('#connectionEventHandler', () => {
   const message = { content: 'message' };
 
@@ -187,6 +224,7 @@ describe('#connectionEventHandler', () => {
 
     expect(serviceConnection.handleConnectionClose).lastCalledWith(message);
   });
+
   it('an event other than close is logged with the type warn', () => {
     const warnStub = jest.fn();
     serviceConnection.log = {warn: warnStub} as unknown as Logger;
@@ -210,6 +248,14 @@ describe('#handleConnectionError', () => {
 });
 
 describe('#getConnectionString', () => {
+  it('throws if connection string is empty', () => {
+    serviceConnection.getConnectionStringStandalone = jest.fn().mockReturnValue('');
+    serviceConnection.getConnectionStringFromCluster = jest.fn();
+    serviceConnection.options.cluster = [];
+
+    expect(() => serviceConnection.getConnectionString()).toThrow('Wrong configuration. Either cluster or standalone mode should be enabled');
+  });
+
   it('if in cluster mode calls getConnectionStringFromCluster', () => {
     serviceConnection.getConnectionStringFromCluster = jest.fn().mockReturnValue('connection');
     serviceConnection.getConnectionStringStandalone = jest.fn();
@@ -300,6 +346,11 @@ describe('#postMessage', () => {
   beforeEach(() => {
     const now = 1552405726176;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
+  });
+
+  it('throws error if connection is null', async () => {
+    serviceConnection.connection = null;
+    await expect(serviceConnection.postMessage(['news'], { foo: 'bar' }, { messageId: '42' })).rejects.toThrow(ConnectionNotInitialized);
   });
 
   it('calls connection "sendToQueue" with default options', async () => {
@@ -399,6 +450,13 @@ describe('#messageHandler', () => {
       routingKey: 'route'
     }
   };
+
+  it('throws error if connection is null', async () => {
+    serviceConnection.connection = null;
+
+    await expect(serviceConnection.messageHandler(messageMock)).rejects.toThrow(ConnectionNotInitialized);
+  });
+
 
   it('validates message', async () => {
     const validateMessage = jest.spyOn(ServiceConnection, 'validateMessage');
@@ -527,6 +585,11 @@ describe('#subscribe', () => {
 });
 
 describe('#subscribeOn', () => {
+  it('throws error if connection is null', async () => {
+    serviceConnection.connection = null;
+    await expect(serviceConnection.subscribeOn('actionAction', jest.fn())).rejects.toThrow(ConnectionNotInitialized);
+  });
+
   it('sets action handler for action', async () => {
     serviceConnection.initQueue = jest.fn().mockResolvedValue(true);
     serviceConnection.setActionHandler = jest.fn().mockResolvedValue(true);
@@ -562,6 +625,12 @@ describe('#initQueue', () => {
 });
 
 describe('#unsubscribe', () => {
+  it('throws error if connection is null', async () => {
+    serviceConnection.connection = null;
+
+    await expect(serviceConnection.unsubscribe()).rejects.toThrow(ConnectionNotInitialized);
+  });
+
   it('cancels connection with queue consumer tag', async () => {
     serviceConnection.queuesConsumerTags.dispatcher = 'ssdSDGHISdfadsg';
 
@@ -573,6 +642,11 @@ describe('#unsubscribe', () => {
 });
 
 describe('#consumeQueue', () => {
+  it('throws error if connection is null', async () => {
+    serviceConnection.connection = null;
+    await expect(serviceConnection.consumeQueue('dispatcher', jest.fn())).rejects.toThrow(ConnectionNotInitialized);
+  });
+
   it('consumes queue and saves its consumer tag to hash map', async () => {
     const result = await serviceConnection.consumeQueue('dispatcher', () => undefined);
 
@@ -621,5 +695,15 @@ describe('#assertTopicExchange', () => {
     serviceConnection.connection = null;
 
     await expect(serviceConnection.assertTopicExchange()).rejects.toThrow('No connection');
+  });
+});
+
+describe('#hasHandlers', () => {
+  it('should return false if only default handler set', () => {
+    expect(serviceConnection.hasHandlers()).toEqual(false);
+  });
+  it('should return true if custom handler set', () => {
+    serviceConnection.setActionHandler('handler1', jest.fn());
+    expect(serviceConnection.hasHandlers()).toEqual(true);
   });
 });

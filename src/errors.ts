@@ -3,7 +3,7 @@ import { AMQPOptions } from './adapters/amqp-node';
 export class ConnectServicesError extends Error {
   payload: unknown;
 
-  constructor(msg: string, errPayload: unknown = {}) {
+  constructor(msg: string, errPayload: unknown) {
     super(msg);
 
     this.payload = errPayload;
