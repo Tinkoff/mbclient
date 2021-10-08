@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/TinkoffCreditSystems/mbclient/compare/v2.2.0...v2.2.1) (2021-10-08)
+
+
+### Bug Fixes
+
+* restore queue bindings on reconnect ([#34](https://github.com/TinkoffCreditSystems/mbclient/issues/34)) ([c264b67](https://github.com/TinkoffCreditSystems/mbclient/commit/c264b674ac6c231c7961ce87f1bd473af50894e1))
+
 # [2.2.0](https://github.com/TinkoffCreditSystems/mbclient/compare/v2.1.0...v2.2.0) (2021-08-25)
 
 
