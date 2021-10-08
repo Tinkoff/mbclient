@@ -348,10 +348,6 @@ describe('#postMessage', () => {
     jest.spyOn(Date, 'now').mockImplementation(() => now);
   });
 
-  afterEach(() => {
-    serviceConnection.connection = Promise.resolve(amqpConnection);
-  });
-
   it('throws error if connection is null', async () => {
     serviceConnection.connection = null;
     await expect(serviceConnection.postMessage(['news'], { foo: 'bar' }, { messageId: '42' })).rejects.toThrow(ConnectionNotInitialized);
@@ -454,10 +450,6 @@ describe('#messageHandler', () => {
       routingKey: 'route'
     }
   };
-
-  afterEach(() => {
-    serviceConnection.connection = Promise.resolve(amqpConnection);
-  });
 
   it('throws error if connection is null', async () => {
     serviceConnection.connection = null;
@@ -593,10 +585,6 @@ describe('#subscribe', () => {
 });
 
 describe('#subscribeOn', () => {
-  afterEach(() => {
-    serviceConnection.connection = Promise.resolve(amqpConnection);
-  });
-
   it('throws error if connection is null', async () => {
     serviceConnection.connection = null;
     await expect(serviceConnection.subscribeOn('actionAction', jest.fn())).rejects.toThrow(ConnectionNotInitialized);
@@ -637,10 +625,6 @@ describe('#initQueue', () => {
 });
 
 describe('#unsubscribe', () => {
-  afterEach(() => {
-    serviceConnection.connection = Promise.resolve(amqpConnection);
-  });
-
   it('throws error if connection is null', async () => {
     serviceConnection.connection = null;
 
@@ -658,10 +642,6 @@ describe('#unsubscribe', () => {
 });
 
 describe('#consumeQueue', () => {
-  afterEach(() => {
-    serviceConnection.connection = Promise.resolve(amqpConnection);
-  });
-
   it('throws error if connection is null', async () => {
     serviceConnection.connection = null;
     await expect(serviceConnection.consumeQueue('dispatcher', jest.fn())).rejects.toThrow(ConnectionNotInitialized);
