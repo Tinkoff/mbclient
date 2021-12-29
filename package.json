@@ -15,7 +15,7 @@
   ],
   "repository": {
     "type": "git",
-    "repository": "https://github.com/TinkoffCreditSystems/mbclient.git"
+    "repository": "https://github.com/Tinkoff/mbclient.git"
   },
   "scripts": {
     "clean": "rm -rf dist",
