@@ -92,8 +92,9 @@ export class ServiceConnection extends EventEmitter {
     this.handlers = {
       [DEFAULT_ACTION]: async ({ message, ack }): Promise<void> => {
         ack();
-        const { fields } = message; // TODO check for {}
-        log.error('[amqp-connection] No action for message', fields);
+        const { fields, properties: { headers: { action } } } = message; // TODO check for {}
+        const actionErrorMessage = action ? `No handler for action ${action}` : `Action is empty`
+        log.error(`[amqp-connection] ${actionErrorMessage} for message`, fields);
       }
     };
   }
@@ -221,7 +222,7 @@ export class ServiceConnection extends EventEmitter {
   connectionEventHandler(eventName: string, eventMessage: Message): void {
     switch (eventName) {
       case 'close':
-        this.handleConnectionClose(eventMessage).catch(this.log.error);
+        this.handleConnectionClose(eventMessage).catch(error => this.log.error(error));
         break;
       default:
         this.log.warn({eventName, eventMessage}, '[amqp-connection] Unsupported connection event');
