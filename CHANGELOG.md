@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/Tinkoff/mbclient/compare/v2.2.1...v2.3.0) (2022-03-10)
+
+
+### Features
+
+* add action value to no action error message in default handler and fix context on close event ([faaba6e](https://github.com/Tinkoff/mbclient/commit/faaba6eee7f6ece36cb385c7270c6371d242293c))
+
 ## [2.2.1](https://github.com/Tinkoff/mbclient/compare/v2.2.0...v2.2.1) (2021-10-08)
 
 
