@@ -1,3 +1,19 @@
+# [3.0.0](https://github.com/Tinkoff/mbclient/compare/v2.3.0...v3.0.0) (2022-06-10)
+
+
+### Features
+
+* **deps:** update amqplib to 0.10.0 ([#36](https://github.com/Tinkoff/mbclient/issues/36)) ([4fc9def](https://github.com/Tinkoff/mbclient/commit/4fc9defa197eccb51c4cbb1f0bac733bc9a3aeda))
+
+
+### BREAKING CHANGES
+
+* **deps:** drop Node.js v10 support
+
+Update all dev dependencies
+
+Add Node.js v18 support.
+
 # [2.3.0](https://github.com/Tinkoff/mbclient/compare/v2.2.1...v2.3.0) (2022-03-10)
 
 
