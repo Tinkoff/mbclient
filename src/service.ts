@@ -11,13 +11,14 @@ import {
   amqpConnectGracefullyStopped,
   ConnectionNotInitialized
 } from './errors';
-import { RawMessage, Message, MessageOptions, MessageHandlerOptions, MessageHandler } from './message';
+import { RawMessage, MessageOptions, MessageHandlerOptions, MessageHandler } from './message';
 import { ConnectionStatus } from './connection';
 import {
-    AMQPAdapter,
-    AMQPOptions,
-    AMQPConnection,
-    QueueOptions
+  AMQPAdapter,
+  AMQPConnection,
+  AMQPError,
+  AMQPOptions,
+  QueueParams
 } from './adapters/amqp-node';
 import { Logger } from './logger';
 import defaultRetryStrategy from './retry-strategies/default';
@@ -28,29 +29,30 @@ const DEFAULT_ACTION = 'defaultAction';
 
 export class ServiceConnection extends EventEmitter {
   /**
-   * Validate AMQP message against service rules
-   */
-  static validateMessage(message: Message | null): void | never {
-    const isEmptyMessage = (): boolean => message === null;
-
-    if (isEmptyMessage()) {
-      throw emptyMessageError();
-    }
-  }
-
-  /**
    * The method of converting input content, in case of an error, returns an object with a string placed inside
-   * @param {Buffer} content
+   * @param {Uint8Array} content
    */
-  static getContent(content: Buffer): unknown {
+  static getContent(content: Uint8Array): unknown {
+    const str = Buffer.from(content).toString('utf8');
     let data;
     try {
-      data = JSON.parse(content.toString());
+      data = JSON.parse(str);
     } catch (ignore) {
-      data = {data: content.toString()};
+      data = { data: str };
     }
 
     return data;
+  }
+
+  /**
+   * Validates AMQP message againts service rules and returns parsed result
+   */
+  static getContentFromMessage(message: RawMessage): unknown | never {
+    if(message.body === null) {
+      throw emptyMessageError();
+    }
+
+    return this.getContent(message.body);
   }
 
   /**
@@ -92,9 +94,9 @@ export class ServiceConnection extends EventEmitter {
     this.handlers = {
       [DEFAULT_ACTION]: async ({ message, ack }): Promise<void> => {
         ack();
-        const { fields, properties: { headers: { action } } } = message; // TODO check for {}
+        const action = message.properties.headers?.action;
         const actionErrorMessage = action ? `No handler for action ${action}` : `Action is empty`
-        log.error(`[amqp-connection] ${actionErrorMessage} for message`, fields);
+        log.error(`[amqp-connection] ${actionErrorMessage} for message`, message);
       }
     };
   }
@@ -104,29 +106,21 @@ export class ServiceConnection extends EventEmitter {
   }
 
   /**
-   * Method returns queue options according to connection options
+   * Method returns queue parameters
+   */
+  getQueueParams(): QueueParams {
+    return { durable: true };
+  }
+
+  /**
+   * Method returns queue args according to connection options
    *
    * In cluster mode:
    * According to RabbitMQ Highly Available (Mirrored) Queues configuration
    * ha-mode property should be set to 'all' to force queue replication
-   *
-   * In standalone mode no additional properties are provided
    */
-  getQueueOptions(): QueueOptions {
-    const options = {
-      durable: true
-    };
-
-    if (this.isClusterConnection()) {
-      return {
-        ...options,
-        arguments: {
-          'ha-mode': 'all',
-        }
-      };
-    }
-
-    return options;
+  getQueueArgs(): Record<string, string> {
+    return this.isClusterConnection() ? { 'ha-mode': 'all' } : {};
   }
 
   /**
@@ -165,7 +159,7 @@ export class ServiceConnection extends EventEmitter {
     }
     const connection = await this.connection;
 
-    await connection.assertQueue(this.name, this.getQueueOptions());
+    await connection.queue(this.name, this.getQueueParams(), this.getQueueArgs());
   }
 
   /**
@@ -177,7 +171,7 @@ export class ServiceConnection extends EventEmitter {
     }
     const connection = await this.connection;
 
-    await connection.assertExchange(ServiceConnection.getTopicExchange(this.options.exchange), 'topic', { durable: true });
+    await connection.exchangeDeclare(ServiceConnection.getTopicExchange(this.options.exchange), 'topic', { durable: true });
   }
 
   /**
@@ -195,8 +189,12 @@ export class ServiceConnection extends EventEmitter {
     try {
       const connectionString = this.getConnectionString();
 
-      connection = await this.amqp.connect(connectionString, this.options, (eventName, message) => {
-        this.connectionEventHandler(eventName, message);
+      connection = await this.amqp.connect(connectionString, async (error: AMQPError) => {
+        try {
+          await this.handleConnectionClose(error);
+        } catch(error) {
+          this.log.error(error);
+        }
       });
 
       this.setConnectionStatus(ConnectionStatus.CONNECTED);
@@ -217,24 +215,11 @@ export class ServiceConnection extends EventEmitter {
   }
 
   /**
-   * Handle connection and channel events
+   * Handle connection close
    */
-  connectionEventHandler(eventName: string, eventMessage: Message): void {
-    switch (eventName) {
-      case 'close':
-        this.handleConnectionClose(eventMessage).catch(error => this.log.error(error));
-        break;
-      default:
-        this.log.warn({eventName, eventMessage}, '[amqp-connection] Unsupported connection event');
-    }
-  }
-
-  /**
-   * Handle connection errors
-   */
-  async handleConnectionClose(eventMessage: Message): Promise<void> {
+  async handleConnectionClose(error: AMQPError): Promise<void> {
     const { password, ...restOptions } = this.options;
-    this.log.error('[amqp-connection] Connection closed.', eventMessage, restOptions);
+    this.log.error('[amqp-connection] Connection closed.', error, restOptions);
 
     this.emit(ConnectionStatus.DISCONNECTED);
 
@@ -249,7 +234,7 @@ export class ServiceConnection extends EventEmitter {
         await this.initQueue(this.name);
 
         for (const handler of handlers) {
-          await connection.bindQueue(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${handler}`);
+          await connection.queueBind(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${handler}`);
         }
       }
     }
@@ -321,40 +306,40 @@ export class ServiceConnection extends EventEmitter {
    * service.postMessage(['news'], 'message', { persistent: true })
    * service.postMessage([], 'message', { replyTo: 'news' })
    */
-  async postMessage(recipients: string[] = [], message: unknown, options: Partial<MessageOptions> = {}): Promise<void> {
+  async postMessage(recipients: string[] = [], message: unknown, options: MessageOptions = {}): Promise<void> {
     if (!this.connection) {
       throw new ConnectionNotInitialized();
     }
     this.log.info(`[amqp-client] send message to ${recipients.toString()}\n`, options);
     const defaultMessageOptions = {
       messageId: uuid(),
-      timestamp: Date.now(),
+      timestamp: new Date(),
       persistent: true,
       replyTo: this.name,
       headers: {
         recipients: ''
       },
     };
-    const { headers: { action = 'default' } = {} } = options;
-    const { headers: { isOriginalContent = false } = {} } = options;
-    const { headers: { routingKey = `${this.name}.${action}` } = {} } = options;
-    const computedOptions = {...defaultMessageOptions, ...options};
+    const action = options.headers?.action ?? 'default';
+    const routingKey = options.headers?.routingKey ?? `${this.name}.${action}`;
+    const isOriginalContent = options.headers?.isOriginalContent ?? false;
+    const computedOptions = { ...defaultMessageOptions, ...options };
     const connection = await this.connection;
 
     const content = isOriginalContent && Buffer.isBuffer(message) ? message : Buffer.from(JSON.stringify(message));
 
     if (recipients.length) {
       await Promise.all(
-        recipients.map(recipient => connection.sendToQueue(recipient, content, computedOptions))
+        recipients.map(recipient => connection.basicPublish('', recipient, content, computedOptions))
       );
       return;
     }
 
-    return connection.publish(
-        ServiceConnection.getTopicExchange(this.options.exchange),
-        routingKey,
-        content,
-        computedOptions
+    await connection.basicPublish(
+      ServiceConnection.getTopicExchange(this.options.exchange),
+      routingKey,
+      content,
+      computedOptions
     );
   }
 
@@ -368,27 +353,20 @@ export class ServiceConnection extends EventEmitter {
       throw new ConnectionNotInitialized();
     }
     try {
-      ServiceConnection.validateMessage(message);
-
-      const {
-        properties: {
-          headers: { action: messageAction = DEFAULT_ACTION }
-        }
-      } = message;
+      const messageAction = message.properties.headers?.action ?? DEFAULT_ACTION;
       const handler = this.getActionHandler(messageAction);
       const connection = await this.connection;
 
       await handler({
         message: {
-          fields: message.fields,
-          properties: message.properties,
-          content: ServiceConnection.getContent(message.content)
+          ...message,
+          content: ServiceConnection.getContentFromMessage(message)
         },
         ack: (): void => {
-          connection.ack(message);
+          connection.basicAck(message.deliveryTag);
         },
         nack: (): void => {
-          connection.nack(message);
+          connection.basicNack(message.deliveryTag);
         }
       });
     } catch (error) {
@@ -447,7 +425,7 @@ export class ServiceConnection extends EventEmitter {
     this.setActionHandler(actionType, onConsume);
     const connection = await this.connection;
     await this.initQueue(this.name);
-    await connection.bindQueue(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${actionType}`);
+    await connection.queueBind(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${actionType}`);
   }
 
   /**
@@ -485,7 +463,7 @@ export class ServiceConnection extends EventEmitter {
       const queue = this.queuesConsumerTags[this.name];
 
       if (queue !== undefined) {
-        await connection.cancel(queue);
+        await connection.basicCancel(queue);
       }
 
       this.log.info(`[amqp-connection] unsubscribed from queue "${this.name}"\n`);
@@ -528,8 +506,8 @@ export class ServiceConnection extends EventEmitter {
     }
     const connection = await this.connection;
     await connection.prefetch(1);
-    const { consumerTag } = await connection.consume(queue, handler);
-    this.queuesConsumerTags[queue] = consumerTag;
+    const { tag } = await connection.basicConsume(queue, { noAck: false }, handler);
+    this.queuesConsumerTags[queue] = tag;
 
     return true;
   }

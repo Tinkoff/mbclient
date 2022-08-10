@@ -1,5 +1,5 @@
-interface MessageHeaders {
-  recipients: string;
+type MessageHeaders = {
+  recipients?: string;
   requestId?: string;
   action?: string;
   type?: string;
@@ -10,8 +10,6 @@ interface MessageHeaders {
 /**
  * Options listed below are distributed between own message options
  * and options specific for amqp client.
- *
- * Property descriptions taken from official amqplib github page
  */
 interface DistributedMessageProperties {
   /**
@@ -59,7 +57,7 @@ interface DistributedMessageProperties {
    * since these are encoded as message headers; the supplied value
    * won't be mutated
    */
-  headers: MessageHeaders;
+  headers?: MessageHeaders;
 
   /**
    * usually used to match replies to requests, or similar
@@ -80,7 +78,7 @@ interface DistributedMessageProperties {
   /**
    * a timestamp for the message
    */
-  timestamp: number;
+  timestamp?: Date;
 
   /**
    * an arbitrary application-specific type for the message
@@ -124,24 +122,20 @@ export interface MessageOptions extends DistributedMessageProperties {
   BCC?: string | string[];
 }
 
-interface MessageFields {
+interface BaseMessage {
   consumerTag: string;
   deliveryTag: number;
   redelivered: boolean;
   exchange: string;
   routingKey: string;
-}
-
-interface MessageBase {
-  fields: MessageFields;
   properties: DistributedMessageProperties;
 }
 
-export interface RawMessage extends MessageBase {
-  content: Buffer;
+export interface RawMessage extends BaseMessage {
+  body: Uint8Array | null;
 }
 
-export interface Message extends MessageBase {
+export interface Message extends RawMessage {
   content: unknown;
 }
 

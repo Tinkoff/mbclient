@@ -7,7 +7,9 @@ module.exports = {
     "<rootDir>/src/**/?(*.)spec.ts"
   ],
   "testEnvironment": "node",
-  "testURL": "http://localhost",
+  "testEnvironmentOptions": {
+    "url": "http://localhost"
+  },
   "transform": {
     "^.+\\.ts$": "ts-jest",
   },

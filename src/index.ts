@@ -47,7 +47,7 @@ export function createClient(options: CreateServiceOptions): Client {
         const sendMessageOptions = {
           replyTo: serviceName,
           correlationId,
-          timestamp: Date.now(),
+          timestamp: new Date(),
           headers: {
             requestId,
             recipients: recipients.join(','),

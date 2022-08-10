@@ -1,13 +1,11 @@
 import connectService, { ServiceConnection } from './service';
-import { AMQPConnection } from './adapters/amqp-node';
+import { AMQPConnection, AMQPError } from './adapters/amqp-node';
 import { ConnectionStatus } from './connection';
 import {
   amqpConnectError,
   amqpConnectGracefullyStopped,
   ConnectionNotInitialized
 } from './errors';
-import { Message } from './message';
-import { Logger } from './logger';
 
 const testAdapter = { connect: jest.fn() };
 const optionsMock = {
@@ -21,17 +19,16 @@ const logger = {
   warn: jest.fn()
 };
 const amqpConnection = {
-  assertQueue: jest.fn(),
-  ack: jest.fn(),
-  nack: jest.fn(),
-  assertExchange: jest.fn(),
-  bindQueue: jest.fn(),
-  cancel: jest.fn(),
+  basicAck: jest.fn(),
+  basicCancel: jest.fn(),
+  basicConsume: jest.fn().mockReturnValue({ tag: 'tag' }),
+  basicNack: jest.fn(),
+  basicPublish: jest.fn(),
   close: jest.fn(),
-  consume: jest.fn().mockReturnValue({ consumerTag: 'tag' }),
+  exchangeDeclare: jest.fn(),
   prefetch: jest.fn(),
-  publish: jest.fn(),
-  sendToQueue: jest.fn()
+  queue: jest.fn(),
+  queueBind: jest.fn()
 };
 let serviceConnection: ServiceConnection;
 
@@ -62,34 +59,37 @@ describe('#constructor', () => {
       nack: jest.fn(),
       message: {
         content: {},
-        fields: {
-          consumerTag: 'abc',
-          deliveryTag: 3,
-          exchange: 'ex',
-          redelivered: false,
-          routingKey: 'route'
-        },
-        properties: { headers: { recipients: 'recipient' }, timestamp: 123 }
+        body: new Uint8Array(Buffer.from(JSON.stringify({}))),
+        consumerTag: 'abc',
+        deliveryTag: 3,
+        redelivered: false,
+        exchange: 'ex',
+        routingKey: 'route',
+        properties: {
+          headers: { recipients: 'recipient' },
+          timestamp: new Date(1479427200000)
+        }
       }
     });
     expect(ack).toBeCalled();
   });
 });
 
-describe('#getQueueOptions', () => {
+describe('#getQueueParams', () => {
   it('returns options with durable set to true', () => {
-    expect(serviceConnection.getQueueOptions()).toEqual({ durable: true });
+    expect(serviceConnection.getQueueParams()).toEqual({ durable: true });
+  });
+});
+
+describe('#getQueueArgs', () => {
+  it('return empty object if configured in standalone mode', () => {
+    expect(serviceConnection.getQueueArgs()).toEqual({});
   });
 
-  it('returns options with durabile set to true and ha-mode=all if configured in cluster mode', () => {
+  it('return ha-mode=all if configured in cluster mode', () => {
     serviceConnection.options.cluster = ['a', 'b', 'c'];
 
-    expect(serviceConnection.getQueueOptions()).toEqual({
-      arguments: {
-        'ha-mode': 'all'
-      },
-      durable: true
-    });
+    expect(serviceConnection.getQueueArgs()).toEqual({ 'ha-mode': 'all' });
   });
 });
 
@@ -129,11 +129,11 @@ describe('#connect', () => {
 
 describe('#assertServiceQueue', () => {
   it('asserts and await assertion of service queue', async () => {
-    serviceConnection.getQueueOptions = jest.fn().mockReturnValue({ durable: true });
+    serviceConnection.getQueueParams = jest.fn().mockReturnValue({ durable: true });
 
     await serviceConnection.assertServiceQueue();
 
-    expect(amqpConnection.assertQueue).lastCalledWith('dispatcher', { durable: true });
+    expect(amqpConnection.queue).lastCalledWith('dispatcher', { durable: true }, {});
   });
 
   it('should throw if connection not initialized', async () => {
@@ -163,15 +163,11 @@ describe('#getConnection', () => {
 
   it('calls adapter connect method', async () => {
     const mockConnect = jest.fn();
-    const mockConnectionEventHandler = jest.fn();
 
     serviceConnection.amqp.connect = mockConnect;
-    serviceConnection.connectionEventHandler = mockConnectionEventHandler
 
     await serviceConnection.getConnection();
-    mockConnect.mock.calls[0]?.[2]('close', {});
     expect(mockConnect).toBeCalled();
-    expect(mockConnectionEventHandler).toBeCalledWith('close', {});
   });
 
   it('generate error when status is disconnecting', async () => {
@@ -182,14 +178,12 @@ describe('#getConnection', () => {
 });
 
 describe('#handleConnectionClose', () => {
-  const message = { content: 'message' };
-
   it('reconnects and rebinds handlers', async () => {
     serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
     serviceConnection.connect = jest.fn();
     serviceConnection.initQueue = jest.fn();
 
-    await serviceConnection.handleConnectionClose(message as unknown as Message);
+    await serviceConnection.handleConnectionClose({} as unknown as AMQPError);
 
     expect(serviceConnection.unsubscribe).toBeCalled();
     expect(serviceConnection.connect).toBeCalled();
@@ -198,39 +192,19 @@ describe('#handleConnectionClose', () => {
 
   it('reconnects and rebinds handlers', async () => {
     serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
-    const connection = { bindQueue: jest.fn() };
+    const connection = { queueBind: jest.fn() };
     serviceConnection.connect = jest.fn().mockResolvedValue(connection);
     serviceConnection.initQueue = jest.fn();
 
     const handlerMock = async () => undefined;
     serviceConnection.setActionHandler('handler1', handlerMock);
 
-    await serviceConnection.handleConnectionClose(message as unknown as Message);
+    await serviceConnection.handleConnectionClose({} as unknown as AMQPError);
 
     expect(serviceConnection.unsubscribe).toBeCalled();
     expect(serviceConnection.connect).toBeCalled();
     expect(serviceConnection.initQueue).toBeCalled();
-    expect(connection.bindQueue).toBeCalledWith('dispatcher', 'dispatcher', '*.handler1');
-  });
-});
-
-describe('#connectionEventHandler', () => {
-  const message = { content: 'message' };
-
-  it('calls connection error handler on error event', () => {
-    serviceConnection.handleConnectionClose = jest.fn().mockResolvedValue({});
-
-    serviceConnection.connectionEventHandler('close', message as unknown as Message);
-
-    expect(serviceConnection.handleConnectionClose).lastCalledWith(message);
-  });
-
-  it('an event other than close is logged with the type warn', () => {
-    const warnStub = jest.fn();
-    serviceConnection.log = {warn: warnStub} as unknown as Logger;
-    serviceConnection.connectionEventHandler('blocked', message as unknown as Message);
-
-    expect(warnStub).toBeCalledWith({eventName: 'blocked', eventMessage: message}, '[amqp-connection] Unsupported connection event');
+    expect(connection.queueBind).toBeCalledWith('dispatcher', 'dispatcher', '*.handler1');
   });
 });
 
@@ -344,8 +318,7 @@ Array [
 
 describe('#postMessage', () => {
   beforeEach(() => {
-    const now = 1552405726176;
-    jest.spyOn(Date, 'now').mockImplementation(() => now);
+    jest.useFakeTimers().setSystemTime(new Date(1479427200000));
   });
 
   it('throws error if connection is null', async () => {
@@ -355,10 +328,11 @@ describe('#postMessage', () => {
 
   it('calls connection "sendToQueue" with default options', async () => {
     await serviceConnection.postMessage(['news'], { foo: 'bar' }, { messageId: '42' });
-    const mockCalls = amqpConnection.sendToQueue.mock.calls;
+    const mockCalls = amqpConnection.basicPublish.mock.calls;
 
     expect(mockCalls[mockCalls.length - 1]).toMatchInlineSnapshot(`
 Array [
+  "",
   "news",
   Object {
     "data": Array [
@@ -385,7 +359,7 @@ Array [
     "messageId": "42",
     "persistent": true,
     "replyTo": "dispatcher",
-    "timestamp": 1552405726176,
+    "timestamp": 2016-11-18T00:00:00.000Z,
   },
 ]
 `);
@@ -399,9 +373,10 @@ Array [
         messageId: '43'
       }
     );
-    const mockCalls = amqpConnection.sendToQueue.mock.calls;
+    const mockCalls = amqpConnection.basicPublish.mock.calls;
     expect(mockCalls[mockCalls.length - 1]).toMatchInlineSnapshot(`
 Array [
+  "",
   "news",
   Object {
     "data": Array [
@@ -428,7 +403,7 @@ Array [
     "messageId": "43",
     "persistent": true,
     "replyTo": "dispatcher",
-    "timestamp": 1552405726176,
+    "timestamp": 2016-11-18T00:00:00.000Z,
   },
 ]
 `);
@@ -437,17 +412,15 @@ Array [
 
 describe('#messageHandler', () => {
   const messageMock = {
-    content: Buffer.from(JSON.stringify({ foo: 'bar' })),
+    body: new Uint8Array(Buffer.from(JSON.stringify({ foo: 'bar' }))),
+    consumerTag: 'abc',
+    deliveryTag: 3,
+    exchange: 'ex',
+    redelivered: false,
+    routingKey: 'route',
     properties: {
       headers: { recipients: 'rec', action: 'customAction' },
-      timestamp: 123
-    },
-    fields: {
-      consumerTag: 'abc',
-      deliveryTag: 3,
-      exchange: 'ex',
-      redelivered: false,
-      routingKey: 'route'
+      timestamp: new Date(1479427200000)
     }
   };
 
@@ -457,18 +430,17 @@ describe('#messageHandler', () => {
     await expect(serviceConnection.messageHandler(messageMock)).rejects.toThrow(ConnectionNotInitialized);
   });
 
-
-  it('validates message', async () => {
-    const validateMessage = jest.spyOn(ServiceConnection, 'validateMessage');
+  it('delegates message validation and parsing to getContentFromMessage', async () => {
+    const getContentFromMessage = jest.spyOn(ServiceConnection, 'getContentFromMessage');
 
     await serviceConnection.messageHandler(messageMock);
 
-    expect(validateMessage).lastCalledWith(messageMock);
-    validateMessage.mockRestore();
+    expect(getContentFromMessage).lastCalledWith(messageMock);
+    getContentFromMessage.mockRestore();
   });
 
   it('logs error if cannot validate', async () => {
-    const validateMessage = jest.spyOn(ServiceConnection, 'validateMessage').mockImplementation(() => {
+    const getContentFromMessage = jest.spyOn(ServiceConnection, 'getContentFromMessage').mockImplementation(() => {
       throw new Error('validation error');
     });
 
@@ -480,7 +452,7 @@ Array [
 ]
 `);
 
-    validateMessage.mockRestore();
+    getContentFromMessage.mockRestore();
   });
 
   it('calls getActionHandler to get action handler', async () => {
@@ -502,23 +474,36 @@ Array [
   Object {
     "ack": [Function],
     "message": Object {
+      "body": Uint8Array [
+        123,
+        34,
+        102,
+        111,
+        111,
+        34,
+        58,
+        34,
+        98,
+        97,
+        114,
+        34,
+        125,
+      ],
+      "consumerTag": "abc",
       "content": Object {
         "foo": "bar",
       },
-      "fields": Object {
-        "consumerTag": "abc",
-        "deliveryTag": 3,
-        "exchange": "ex",
-        "redelivered": false,
-        "routingKey": "route",
-      },
+      "deliveryTag": 3,
+      "exchange": "ex",
       "properties": Object {
         "headers": Object {
           "action": "customAction",
           "recipients": "rec",
         },
-        "timestamp": 123,
+        "timestamp": 2016-11-18T00:00:00.000Z,
       },
+      "redelivered": false,
+      "routingKey": "route",
     },
     "nack": [Function],
   },
@@ -547,29 +532,40 @@ describe('#getActionHandler', () => {
   });
 });
 
-describe('#validateMessage', () => {
-  it('not throws if message is valid', () => {
-    const messageMock = {
-      content: Buffer.from('hello world'),
-      properties: {
-        headers: { recipients: 'rec', action: 'customAction' },
-        timestamp: 123
-      },
-      fields: {
-        consumerTag: 'abc',
-        deliveryTag: 3,
-        exchange: 'ex',
-        redelivered: false,
-        routingKey: 'route'
-      }
-    };
-    const validateMessage = ServiceConnection.validateMessage.bind(null, messageMock);
+describe('#getContentFromMessage', () => {
+  const messageMock = {
+    body: new Uint8Array(Buffer.from('hello world')),
+    consumerTag: 'abc',
+    deliveryTag: 3,
+    exchange: 'ex',
+    redelivered: false,
+    routingKey: 'route',
+    properties: {
+      headers: { recipients: 'rec', action: 'customAction' },
+      timestamp: new Date(1479427200000)
+    }
+  };
 
-    expect(validateMessage).not.toThrow();
+  it('not throws if message is valid', () => {
+    expect(() => {
+      ServiceConnection.getContentFromMessage(messageMock);
+    }).not.toThrow();
   });
 
-  it('should throw if message is empty', () => {
-    expect(() => ServiceConnection.validateMessage(null)).toThrowError('Received an empty message. Looks like connection was lost or vhost was deleted, cancelling subscriptions to queues');
+  it('throws if message is empty', () => {
+    expect(() => {
+      ServiceConnection.getContentFromMessage({ ...messageMock, body: null })
+    }).toThrowError('Received an empty message. Looks like connection was lost or vhost was deleted, cancelling subscriptions to queues');
+  });
+
+  it('delegates body parsing to getContent', () => {
+    const getContent = jest.spyOn(ServiceConnection, 'getContent');
+
+    const result = ServiceConnection.getContentFromMessage(messageMock);
+
+    expect(getContent).lastCalledWith(messageMock.body);
+    expect(result).toEqual({ data: 'hello world' });
+    getContent.mockRestore();
   });
 });
 
@@ -596,7 +592,7 @@ describe('#subscribeOn', () => {
 
     await serviceConnection.subscribeOn('actionAction', async () => undefined);
 
-    expect(amqpConnection.bindQueue).lastCalledWith('dispatcher', 'dispatcher', '*.actionAction');
+    expect(amqpConnection.queueBind).lastCalledWith('dispatcher', 'dispatcher', '*.actionAction');
     expect(serviceConnection.setActionHandler).lastCalledWith('actionAction', expect.any(Function));
   });
 });
@@ -636,7 +632,7 @@ describe('#unsubscribe', () => {
 
     await serviceConnection.unsubscribe();
 
-    expect(amqpConnection.cancel).lastCalledWith('ssdSDGHISdfadsg');
+    expect(amqpConnection.basicCancel).lastCalledWith('ssdSDGHISdfadsg');
     expect(serviceConnection.queuesConsumerTags.input).toBeUndefined();
   });
 });
@@ -651,7 +647,7 @@ describe('#consumeQueue', () => {
     const result = await serviceConnection.consumeQueue('dispatcher', () => undefined);
 
     expect(amqpConnection.prefetch).lastCalledWith(1);
-    expect(amqpConnection.consume).lastCalledWith('dispatcher', expect.any(Function));
+    expect(amqpConnection.basicConsume).lastCalledWith('dispatcher', { noAck: false }, expect.any(Function));
     expect(serviceConnection.queuesConsumerTags.dispatcher).toBe('tag');
     expect(result).toBe(true);
   });
@@ -679,7 +675,7 @@ describe('#getTopicExchange', () => {
 
 describe('#getContent', () => {
   it('should return JSON parse object when buffer contains json object', () => {
-    const exampleData = {route: 'test'};
+    const exampleData = { route: 'test' };
     const content: Buffer = Buffer.from(JSON.stringify(exampleData));
     expect(ServiceConnection.getContent(content)).toEqual(exampleData);
   });
