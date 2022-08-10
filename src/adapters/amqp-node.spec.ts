@@ -1,7 +1,7 @@
-import { connect } from 'amqplib';
+import { AMQPClient, AMQPError } from '@cloudamqp/amqp-client';
 import getAMQPNodeAdapter from './amqp-node';
 
-const connectMock = (connect as unknown) as jest.Mock<any>;
+const AMQPClientMock = (AMQPClient as unknown) as jest.Mock<any>;
 
 describe('amqp.node adapter', () => {
   it('is function', async () => {
@@ -14,59 +14,29 @@ describe('amqp.node adapter', () => {
   });
 
   it('connect adds event listeners', async () => {
-    const createChannelOpt = { on: jest.fn(), prefetch: jest.fn() };
-    const connectOpt = {
-      createChannel: jest.fn().mockResolvedValue(createChannelOpt),
-      on: jest.fn()
+    const channelOpt = {
+      prefetch: jest.fn()
     };
-    connectMock.mockResolvedValue(connectOpt);
+    const connectOpt = {
+      channel: jest.fn().mockResolvedValue(channelOpt),
+      onerror: jest.fn()
+    };
+    const amqpOpt = {
+      connect: jest.fn().mockResolvedValue(connectOpt)
+    };
+    AMQPClientMock.mockReturnValue(amqpOpt);
+    const closeHandler = jest.fn();
     const adapter = getAMQPNodeAdapter();
 
     await adapter.connect(
-      'connection-string',
-      { username: 'username', password: 'password' },
-      jest.fn()
+      'amqp://localhost',
+      closeHandler
     );
+    connectOpt.onerror({ message: 'some error' } as AMQPError);
 
-    expect(connectOpt.on.mock.calls).toMatchInlineSnapshot(`
-Array [
-  Array [
-    "error",
-    [Function],
-  ],
-  Array [
-    "close",
-    [Function],
-  ],
-  Array [
-    "blocked",
-    [Function],
-  ],
-  Array [
-    "unblocked",
-    [Function],
-  ],
-]
-`);
+    expect(closeHandler).lastCalledWith({ message: 'some error' });
 
-    expect(createChannelOpt.on.mock.calls).toMatchInlineSnapshot(`
-Array [
-  Array [
-    "error",
-    [Function],
-  ],
-  Array [
-    "return",
-    [Function],
-  ],
-  Array [
-    "drain",
-    [Function],
-  ],
-]
-`);
-
-    expect(createChannelOpt.prefetch.mock.calls[0]).toMatchInlineSnapshot(`
+    expect(channelOpt.prefetch.mock.calls[0]).toMatchInlineSnapshot(`
 Array [
   1,
 ]

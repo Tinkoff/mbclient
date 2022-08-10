@@ -14,8 +14,6 @@ jest.mock('./connection', () =>
     connection: Promise.resolve()
   })
 );
-const now = 1479427200000;
-jest.spyOn(Date, 'now').mockImplementation(() => now);
 
 const connectMock = (connect as unknown) as jest.Mock;
 
@@ -75,6 +73,8 @@ describe('createClient', () => {
       });
 
       it('posts message to service queue', async () => {
+        jest.useFakeTimers().setSystemTime(new Date(1479427200000));
+
         await client.send({
           action: 'test',
           requestId: '1',

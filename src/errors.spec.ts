@@ -7,7 +7,9 @@ import {
   ConnectServicesError,
   emptyMessageError,
   EmptyMessageError,
-  ConnectionNotInitialized
+  ConnectionNotInitialized,
+  unexpectedNonStringAction,
+  UnexpectedNonStringAction
 } from './errors';
 
 it('should have amqpConnectError', () => {
@@ -36,4 +38,10 @@ it('should have emptyMessageError', () => {
 
 it('should have ConnectionNotInitialized', () => {
   expect(typeof ConnectionNotInitialized).toBe('function');
+});
+
+it('should have unexpectedNonStringAction', () => {
+  expect(typeof unexpectedNonStringAction).toBe('function');
+  const error = unexpectedNonStringAction(undefined);
+  expect(error).toBeInstanceOf(UnexpectedNonStringAction);
 });

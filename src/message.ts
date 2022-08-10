@@ -10,8 +10,6 @@ interface MessageHeaders {
 /**
  * Options listed below are distributed between own message options
  * and options specific for amqp client.
- *
- * Property descriptions taken from official amqplib github page
  */
 interface DistributedMessageProperties {
   /**
@@ -132,17 +130,10 @@ interface MessageFields {
   routingKey: string;
 }
 
-interface MessageBase {
+export interface Message {
+  content: unknown;
   fields: MessageFields;
   properties: DistributedMessageProperties;
-}
-
-export interface RawMessage extends MessageBase {
-  content: Buffer;
-}
-
-export interface Message extends MessageBase {
-  content: unknown;
 }
 
 export interface MessageHandlerOptions {
