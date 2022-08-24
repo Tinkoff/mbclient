@@ -1,9 +1,4 @@
-import { connect } from 'amqplib';
-
-import { Message, MessageOptions, RawMessage } from '../message';
-
-const CONNECTION_EVENTS = ['error', 'close', 'blocked', 'unblocked'];
-const CHANNEL_EVENTS = ['error', 'return', 'drain'];
+import { AMQPClient, AMQPError } from '@cloudamqp/amqp-client';
 
 export interface AMQPOptions {
   username: string;
@@ -17,40 +12,57 @@ export interface AMQPOptions {
   exchange?: string;
 }
 
-export interface QueueOptions {
-  durable: boolean;
-  arguments?: {
-    'ha-mode'?: string;
-  }
-}
-
-export interface ExchangeOptions {
-  durable: boolean;
-}
-
-interface ConsumeResult {
+// to indicate, that these types are related to amqp-client.js, prepend them with AMQP
+interface AMQPConsumeParams { noAck: false; }
+interface AMQPConsumer { tag: string; }
+interface AMQPExchangeParams { durable: true; }
+type AMQPExchangeType = 'topic';
+export type AMQPMessageCallback = (message: AMQPMessage) => void;
+export interface AMQPMessage {
+  body: Uint8Array | null;
   consumerTag: string;
+  deliveryTag: number;
+  exchange: string;
+  properties: AMQPMessageProps;
+  redelivered: boolean;
+  routingKey: string;
 }
+interface AMQPMessageProps {
+  appId?: string;
+  contentEncoding?: string;
+  contentType?: string;
+  correlationId?: string;
+  deliveryMode?: number;
+  expiration?: string;
+  headers?: Record<string, string | boolean | bigint | number | undefined | null | object>;
+  messageId?: string;
+  priority?: number;
+  replyTo?: string;
+  timestamp?: Date;
+  type?: string;
+  userId?: string;
+}
+interface AMQPQueueParams { durable: true; }
+export interface AMQPQueueArgs { 'ha-mode'?: 'all'; }
 
-export interface AMQPConnection {
-  assertQueue: (queue: string, options: QueueOptions) => Promise<void>;
-  assertExchange: (exchange: string, queue: string, options: ExchangeOptions) => Promise<void>;
-  ack: (message: Message) => void;
-  nack: (message: Message) => void;
-  sendToQueue: (queue: string, message: Buffer, options: MessageOptions) => Promise<void>;
-  bindQueue: (queue: string, exchange: string, routingRegExp: string) => Promise<void>;
-  publish: (exchange: string, routingKey: string, message: Buffer, options: MessageOptions) => Promise<void>;
-  consume: (queue: string, handler: (message: RawMessage) => void) => Promise<ConsumeResult>;
-  prefetch: (maxMessages: number) => Promise<void>;
-  cancel: (consumerTag: string) => Promise<void>;
+// `reexport` type, enumerating only used subset
+export type AMQPConnection = {
+  basicAck: (deliveryTag: number) => Promise<void>;
+  basicCancel: (consumerTag: string) => Promise<unknown>;
+  basicConsume: (queueName: string, params: AMQPConsumeParams, callback: AMQPMessageCallback) => Promise<AMQPConsumer>;
+  basicNack: (deliveryTag: number) => Promise<void>;
+  basicPublish: (exchange: string, routingKey: string, data: Buffer, messageProps: AMQPMessageProps) => Promise<number>;
   close: () => Promise<void>;
-}
+  exchangeDeclare: (name: string, type: AMQPExchangeType, params: AMQPExchangeParams) => Promise<void>;
+  prefetch: (count: number) => Promise<void>;
+  queue: (name: string, params: AMQPQueueParams, args: AMQPQueueArgs) => Promise<unknown>;
+  queueBind: (name: string, exchange: string, routingKey: string) => Promise<void>;
+};
 
 export interface AMQPAdapter {
   connect: (
     connectionString: string,
-    options: AMQPOptions,
-    cb: (eventName: string, message: Message) => void
+    closeHandler: (error: Error) => void
   ) => Promise<AMQPConnection>;
 }
 
@@ -58,27 +70,19 @@ const getAMQPNodeAdapter = (): AMQPAdapter => {
   return {
     async connect(
       connectionString: string,
-      options: AMQPOptions,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      eventHandler: (eventName: string, message: Message, ...args: any[]) => void
+      closeHandler: (error: Error) => void
     ): Promise<AMQPConnection> {
-      const connection = await connect(
-        connectionString,
-        options
-      );
-      const channel = await connection.createChannel();
-
-      CONNECTION_EVENTS.forEach(eventName => {
-        connection.on(eventName, (message: Message, ...args) => eventHandler(eventName, message, ...args));
-      });
-
-      CHANNEL_EVENTS.forEach(eventName => {
-        channel.on(eventName, (message: Message, ...args) => eventHandler(eventName, message, ...args));
-      });
+      const amqp = new AMQPClient(connectionString);
+      const connection = await amqp.connect();
+      const channel = await connection.channel();
 
       await channel.prefetch(1);
 
-      return (channel as unknown) as AMQPConnection;
+      connection.onerror = (error: AMQPError) => {
+        closeHandler(error);
+      };
+
+      return channel;
     }
   };
 };
