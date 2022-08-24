@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/Tinkoff/mbclient/compare/v3.0.0...v3.1.0) (2022-08-24)
+
+
+### Features
+
+* replace amqplib with amqp-client.js ([9f2dd56](https://github.com/Tinkoff/mbclient/commit/9f2dd56270fe82a0449bbd85c5ef2c978a22f0e5))
+
 # [3.0.0](https://github.com/Tinkoff/mbclient/compare/v2.3.0...v3.0.0) (2022-06-10)
 
 
