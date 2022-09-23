@@ -268,7 +268,15 @@ describe('#getConnectionStringStandalone', () => {
   it('creates connection string from options', () => {
     const connectionString = serviceConnection.getConnectionStringStandalone();
 
-    expect(connectionString).toBe('amqp://test:test123@localhost/?heartbeat=30');
+    expect(connectionString).toBe('amqp://test:test123@localhost/?frameMax=4096&heartbeat=30');
+  });
+
+  it('creates connection string from options with amqps', () => {
+    serviceConnection.options.amqps = true;
+    const connectionString = serviceConnection.getConnectionStringStandalone();
+
+    expect(connectionString).toBe('amqps://test:test123@localhost/?frameMax=4096&heartbeat=30');
+    delete serviceConnection.options.amqps;
   });
 
   it('logs current connection mode', () => {
@@ -291,7 +299,7 @@ describe('#getConnectionStringFromCluster', () => {
 
     expect(
       serviceConnection.options.cluster.map(
-        host => `amqp://${optionsMock.username}:${optionsMock.password}@${host}/?heartbeat=30`
+        host => `amqp://${optionsMock.username}:${optionsMock.password}@${host}/?frameMax=4096&heartbeat=30`
       )
     ).toContain(randomCluster);
   });

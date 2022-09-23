@@ -22,6 +22,8 @@ When sending a message indicating the recipients, the message sent to their queu
       password: '123',
       host: 'localhost',
       port: 5672,
+      amqps: true,
+      frameMax: 8192,
     },
   });
 

@@ -26,6 +26,7 @@ import { Logger } from './logger';
 import defaultRetryStrategy from './retry-strategies/default';
 
 const DEFAULT_HEART_BEAT = 30;
+const DEFAULT_FRAME_MAX = 4096;
 
 const DEFAULT_ACTION = 'defaultAction';
 
@@ -267,8 +268,9 @@ export class ServiceConnection extends EventEmitter {
    * Extract connection string from options using 'host' parameter
    */
   getConnectionStringStandalone(): string {
-    const { username, password, host = '', vhost = '', heartbeat = DEFAULT_HEART_BEAT } = this.options;
-    const connectionString = `amqp://${username}:${password}@${host}/${vhost}?heartbeat=${heartbeat}`;
+    const { username, password, amqps = false, host = '', vhost = '', heartbeat = DEFAULT_HEART_BEAT, frameMax = DEFAULT_FRAME_MAX } = this.options;
+    const protocol = amqps ? 'amqps' : 'amqp';
+    const connectionString = `${protocol}://${username}:${password}@${host}/${vhost}?frameMax=${frameMax}&heartbeat=${heartbeat}`;
 
     this.log.info('[amqp-connection] Configured for standalone');
 
@@ -279,9 +281,10 @@ export class ServiceConnection extends EventEmitter {
    * Pick random connection string from 'cluster' property
    */
   getConnectionStringFromCluster(): string {
-    const { username, password, cluster = [], vhost = '', heartbeat = DEFAULT_HEART_BEAT } = this.options;
+    const { username, password, amqps = false, cluster = [], vhost = '', heartbeat = DEFAULT_HEART_BEAT, frameMax = DEFAULT_FRAME_MAX } = this.options;
+    const protocol = amqps ? 'amqps' : 'amqp';
     const connectionStrings = cluster.map(
-      host => `amqp://${username}:${password}@${host}/${vhost}?heartbeat=${heartbeat}`
+      host => `${protocol}://${username}:${password}@${host}/${vhost}?frameMax=${frameMax}&heartbeat=${heartbeat}`
     );
 
     this.log.info('[amqp-connection] Configured for cluster');
