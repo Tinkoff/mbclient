@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/Tinkoff/mbclient/compare/v3.1.0...v3.2.0) (2022-09-23)
+
+
+### Features
+
+* add protocol and maxFrame configuration ([6e634c3](https://github.com/Tinkoff/mbclient/commit/6e634c373545c50d84b120717366ebff3a7e965b))
+
 # [3.1.0](https://github.com/Tinkoff/mbclient/compare/v3.0.0...v3.1.0) (2022-08-24)
 
 
