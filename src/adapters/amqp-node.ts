@@ -5,8 +5,10 @@ export interface AMQPOptions {
   password: string;
   host?: string;
   cluster?: string[];
+  amqps?: boolean;
   vhost?: string;
   heartbeat?: number;
+  frameMax?: number;
   maxReconnects?: number;
   retryStrategy?: (times: number) => number;
   exchange?: string;
