@@ -11,7 +11,10 @@ module.exports = {
     "url": "http://localhost"
   },
   "transform": {
-    "^.+\\.ts$": "ts-jest",
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json',
+      diagnostics: true
+    }]
   },
   "transformIgnorePatterns": [
     "[/\\\\]node_modules[/\\\\].+\\.(js|ts)$"
