@@ -15,8 +15,14 @@ When sending a message indicating the recipients, the message sent to their queu
 ### Subscribe to broadcast messages by message type
 
 ```javascript
+  const logger = {
+    info: console.log,
+    warn: console.log,
+    error: console.error,
+  }
   const client = createClient({
     serviceName: 'news',
+    logger,
     connectOptions: {
       username: 'test',
       password: '123',
