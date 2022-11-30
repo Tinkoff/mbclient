@@ -4,15 +4,15 @@ import EventEmitter from 'events';
 import timeout from './timeout';
 import randomPickConnectionString from './random-pick';
 import {
-  EmptyMessageError,
-  AmqpConnectGracefullyStopped,
-  emptyMessageError,
   amqpConnectError,
+  AmqpConnectGracefullyStopped,
   amqpConnectGracefullyStopped,
   ConnectionNotInitialized,
+  emptyMessageError,
+  EmptyMessageError,
   unexpectedNonStringAction
 } from './errors';
-import { MessageOptions, MessageHandlerOptions, MessageHandler } from './message';
+import { MessageHandler, MessageHandlerOptions, MessageOptions } from './message';
 import { ConnectionStatus } from './connection';
 import {
   AMQPAdapter,
@@ -211,24 +211,29 @@ export class ServiceConnection extends EventEmitter {
    * Handle connection close
    */
   async handleConnectionClose(error: Error): Promise<void> {
+    if (this.status === ConnectionStatus.DISCONNECTING || this.status === ConnectionStatus.CONNECTING) {
+      return;
+    }
+
+    this.setConnectionStatus(ConnectionStatus.DISCONNECTED);
+    // set the "connecting" status in order to avoid concurrent connection in case
+    // when the handler is called several times in the short period of time
+    this.status = ConnectionStatus.CONNECTING;
+
     const { password, ...restOptions } = this.options;
     this.log.error('[amqp-connection] Connection closed.', error, restOptions);
 
-    this.emit(ConnectionStatus.DISCONNECTED);
-
     await this.unsubscribe();
 
-    if (this.status !== ConnectionStatus.DISCONNECTING) {
-      const connection = await this.connect();
+    const connection = await this.connect();
 
-      const handlers = Object.keys(this.handlers).filter(name => name !== DEFAULT_ACTION);
+    const handlers = Object.keys(this.handlers).filter(name => name !== DEFAULT_ACTION);
 
-      if (handlers.length > 0) {
-        await this.initQueue(this.name);
+    if (handlers.length > 0) {
+      await this.initQueue(this.name);
 
-        for (const handler of handlers) {
-          await connection.queueBind(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${handler}`);
-        }
+      for (const handler of handlers) {
+        await connection.queueBind(this.name, ServiceConnection.getTopicExchange(this.options.exchange), `*.${handler}`);
       }
     }
   }

@@ -1,11 +1,7 @@
 import connectService, { ServiceConnection } from './service';
 import { AMQPConnection } from './adapters/amqp-node';
 import { ConnectionStatus } from './connection';
-import {
-  amqpConnectError,
-  amqpConnectGracefullyStopped,
-  ConnectionNotInitialized
-} from './errors';
+import { amqpConnectError, amqpConnectGracefullyStopped, ConnectionNotInitialized } from './errors';
 
 const testAdapter = { connect: jest.fn() };
 const optionsMock = {
@@ -171,7 +167,8 @@ describe('#getConnection', () => {
 });
 
 describe('#handleConnectionClose', () => {
-  it('reconnects and rebinds handlers', async () => {
+  it('reconnects if status is CONNECTED', async () => {
+    serviceConnection.status = ConnectionStatus.CONNECTED;
     serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
     serviceConnection.connect = jest.fn();
     serviceConnection.initQueue = jest.fn();
@@ -184,6 +181,7 @@ describe('#handleConnectionClose', () => {
   });
 
   it('reconnects and rebinds handlers', async () => {
+    serviceConnection.status = ConnectionStatus.CONNECTED;
     serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
     const connection = { queueBind: jest.fn() };
     serviceConnection.connect = jest.fn().mockResolvedValue(connection);
@@ -199,10 +197,47 @@ describe('#handleConnectionClose', () => {
     expect(serviceConnection.initQueue).toBeCalled();
     expect(connection.queueBind).toBeCalledWith('dispatcher', 'dispatcher', '*.handler1');
   });
+
+  it('reconnects and rebinds handlers only once', async () => {
+    serviceConnection.status = ConnectionStatus.CONNECTED;
+    serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
+    const connection = { queueBind: jest.fn() };
+    serviceConnection.connect = jest.fn().mockResolvedValue(connection);
+    serviceConnection.initQueue = jest.fn();
+
+    const handlerMock = async () => undefined;
+    serviceConnection.setActionHandler('handler1', handlerMock);
+    serviceConnection.setActionHandler('handler1', handlerMock);
+
+    await Promise.all([
+      serviceConnection.handleConnectionClose({} as unknown as Error),
+      serviceConnection.handleConnectionClose({} as unknown as Error),
+      serviceConnection.handleConnectionClose({} as unknown as Error)
+    ]);
+
+    expect(serviceConnection.unsubscribe).toBeCalledTimes(1);
+    expect(serviceConnection.connect).toBeCalledTimes(1);
+    expect(serviceConnection.initQueue).toBeCalledTimes(1);
+    expect(connection.queueBind).toBeCalledTimes(1);
+  });
+
+  it.each([ConnectionStatus.DISCONNECTING, ConnectionStatus.CONNECTING])('does not reconnect if status is %s', async (status) => {
+    serviceConnection.status = status;
+    serviceConnection.unsubscribe = jest.fn().mockResolvedValue({});
+    serviceConnection.connect = jest.fn();
+    serviceConnection.initQueue = jest.fn();
+
+    await serviceConnection.handleConnectionClose({} as unknown as Error);
+
+    expect(serviceConnection.unsubscribe).not.toBeCalled();
+    expect(serviceConnection.connect).not.toBeCalled();
+    expect(serviceConnection.initQueue).not.toBeCalled();
+  });
 });
 
 describe('#handleConnectionError', () => {
   it('logs error to console', () => {
+    serviceConnection.status = ConnectionStatus.CONNECTED;
     serviceConnection.unsubscribe = jest.fn();
     serviceConnection.connect = jest.fn();
     const message = { content: 'message' };
