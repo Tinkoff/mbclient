@@ -6,7 +6,7 @@ import { MessageHandlerOptions, MessageHandler } from './message';
 export interface CreateServiceOptions {
   appId?: string;
   serviceName: string;
-  logger?: Logger;
+  logger: Logger;
   connectOptions: AMQPOptions;
 }
 

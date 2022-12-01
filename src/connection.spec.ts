@@ -37,16 +37,4 @@ Array [
 ]
 `);
   });
-
-  it('should fail if logger is empty', () => {
-    const optionsMock = {
-      connectOptions: {
-        username: 'stub',
-        password: 'test'
-      },
-      serviceName: 'test'
-    };
-
-    expect(() => connect(optionsMock)).toThrowError('logger is required.');
-  })
 });
