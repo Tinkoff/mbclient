@@ -1,3 +1,11 @@
+## [3.2.1](https://github.com/Tinkoff/mbclient/compare/v3.2.0...v3.2.1) (2022-12-01)
+
+
+### Bug Fixes
+
+* **mbclient:** fix reconnect logic ([3cf0450](https://github.com/Tinkoff/mbclient/commit/3cf045090427c640a8b20e0509ba3c8df53c29e8))
+* **mbclient:** make logger required in CreateServiceOptions interface ([623dbd2](https://github.com/Tinkoff/mbclient/commit/623dbd26cb70b7029f0114fbe5fe0e0388e0c71b))
+
 # [3.2.0](https://github.com/Tinkoff/mbclient/compare/v3.1.0...v3.2.0) (2022-09-23)
 
 
