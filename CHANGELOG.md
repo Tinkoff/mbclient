@@ -1,3 +1,11 @@
+## [3.2.2](https://github.com/Tinkoff/mbclient/compare/v3.2.1...v3.2.2) (2023-02-13)
+
+
+### Bug Fixes
+
+* change default host ([dcc30ff](https://github.com/Tinkoff/mbclient/commit/dcc30ffba56c265e8640b652c89b23dd1972c9c7))
+* delete unused appId parameter ([73230ef](https://github.com/Tinkoff/mbclient/commit/73230ef52bcdd2690193c9b178426d40556e63ba))
+
 ## [3.2.1](https://github.com/Tinkoff/mbclient/compare/v3.2.0...v3.2.1) (2022-12-01)
 
 
