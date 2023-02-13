@@ -1,10 +1,9 @@
 import connect from './connection';
 import { AMQPOptions } from './adapters/amqp-node';
 import { Logger } from './logger';
-import { MessageHandlerOptions, MessageHandler } from './message';
+import { MessageHandler } from './message';
 
 export interface CreateServiceOptions {
-  appId?: string;
   serviceName: string;
   logger: Logger;
   connectOptions: AMQPOptions;
@@ -41,6 +40,12 @@ export function createClient(options: CreateServiceOptions): Client {
   const { service, connection } = connect(options);
 
   return {
+    /**
+     * Send a message.
+     * When sending a message indicating the recipients, the message sent to their queue directly.
+     * Otherwise, the message sent via routingKey "{serviceName}.{Action}" to the dispatcher exchange.
+     * @param clientSendMessageOptions
+     */
     send: (clientSendMessageOptions: ClientSendMessage): Promise<void> =>
       connection.then(() => {
         const { payload, action, requestId, recipients = [], correlationId, routingKey, isOriginalContent = false } = clientSendMessageOptions;
@@ -60,17 +65,42 @@ export function createClient(options: CreateServiceOptions): Client {
         return service.postMessage(recipients, payload, sendMessageOptions);
       }),
 
+    /**
+     * Subscribe to messages from service queue.
+     * The handler will be called if there is no handler for specified action type.
+     * @param callback
+     */
     consume: (callback: MessageHandler): Promise<void> =>
       connection.then(() => service.subscribe(callback)),
 
+    /**
+     * Subscribe to messages from service queue and handle only specific actions.
+     * @param actionType
+     * @param callback
+     */
     consumeByAction: (
       actionType: string,
-      callback: (options: MessageHandlerOptions) => Promise<void>
+      callback: MessageHandler
     ): Promise<void> => connection.then(() => service.subscribeOn(actionType, callback)),
 
+    /**
+     * Unsubscribe to queue
+     */
     cancel: (): Promise<void> => connection.then(() => service.unsubscribe()),
+
+    /**
+     * Close connection
+     */
     close: (): Promise<void> => service.close(),
+
+    /**
+     * Subscribe to connection events
+     */
     on: service.on.bind(service),
+
+    /**
+     * Subscribe to connection events
+     */
     once: service.on.bind(service)
   };
 }

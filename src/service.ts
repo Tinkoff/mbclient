@@ -273,7 +273,7 @@ export class ServiceConnection extends EventEmitter {
    * Extract connection string from options using 'host' parameter
    */
   getConnectionStringStandalone(): string {
-    const { username, password, amqps = false, host = '', vhost = '', heartbeat = DEFAULT_HEART_BEAT, frameMax = DEFAULT_FRAME_MAX } = this.options;
+    const { username, password, amqps = false, host = 'localhost:5672', vhost = '', heartbeat = DEFAULT_HEART_BEAT, frameMax = DEFAULT_FRAME_MAX } = this.options;
     const protocol = amqps ? 'amqps' : 'amqp';
     const connectionString = `${protocol}://${username}:${password}@${host}/${vhost}?frameMax=${frameMax}&heartbeat=${heartbeat}`;
 

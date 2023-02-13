@@ -1,16 +1,58 @@
 import { AMQPClient, AMQPError } from '@cloudamqp/amqp-client';
 
 export interface AMQPOptions {
+  /**
+   * Username for authentication
+   */
   username: string;
+  /**
+   * Password
+   */
   password: string;
+  /**
+   * AMQP host to connect to
+   * @default localhost:5672
+   */
   host?: string;
+  /**
+   * List of hosts if AMQP cluster is used
+   */
   cluster?: string[];
+  /**
+   * Enable secure connection
+   * @default false
+   */
   amqps?: boolean;
+  /**
+   * Virtual Host
+   * @default /
+   */
   vhost?: string;
+  /**
+   * Heartbeat timeout value in seconds (an integer) to negotiate with the server
+   * @default 30
+   */
   heartbeat?: number;
+  /**
+   * The size in bytes of the maximum frame allowed over the connection
+   * @default 4096
+   */
   frameMax?: number;
+  /**
+   * Max reconnect attempts
+   * @default Infinity
+   */
   maxReconnects?: number;
-  retryStrategy?: (times: number) => number;
+  /**
+   * Function that returns milliseconds number to delay before reconnect attempt.
+   * @default Default strategy implements exponential backoff algorithm.
+   * @param attempt attempt number
+   */
+  retryStrategy?: (attempt: number) => number;
+  /**
+   * AMQP exchange name to bind to. It will be created if it doesn't exist.
+   * @default dispatcher
+   */
   exchange?: string;
 }
 
