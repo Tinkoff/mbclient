@@ -56,6 +56,10 @@ export interface AMQPOptions {
   exchange?: string;
 }
 
+export interface AMQPQueueOptions {
+  args: AMQPQueueArgs;
+}
+
 // to indicate, that these types are related to amqp-client.js, prepend them with AMQP
 interface AMQPConsumeParams { noAck: false; }
 interface AMQPConsumer { tag: string; }
@@ -87,7 +91,7 @@ interface AMQPMessageProps {
   userId?: string;
 }
 interface AMQPQueueParams { durable: true; }
-export interface AMQPQueueArgs { 'ha-mode'?: 'all'; }
+export interface AMQPQueueArgs { 'ha-mode'?: 'all'; 'x-single-active-consumer'?: boolean; }
 
 // `reexport` type, enumerating only used subset
 export type AMQPConnection = {

@@ -28,6 +28,9 @@ Array [
     "password": "test",
     "username": "stub",
   },
+  Object {
+    "args": Object {},
+  },
   "test",
   Object {
     "error": [MockFunction],
