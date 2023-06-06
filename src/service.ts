@@ -20,11 +20,14 @@ import {
   AMQPMessage,
   AMQPMessageCallback,
   AMQPOptions,
-  AMQPQueueArgs,
-  AMQPQueueOptions
+  AMQPQueueArgs
 } from './adapters/amqp-node';
 import { Logger } from './logger';
 import defaultRetryStrategy from './retry-strategies/default';
+
+export interface QueueOptions {
+  singleActiveConsumer: boolean;
+}
 
 const DEFAULT_HEART_BEAT = 30;
 const DEFAULT_FRAME_MAX = 4096;
@@ -52,7 +55,7 @@ export class ServiceConnection extends EventEmitter {
    * Validates AMQP message againts service rules and returns parsed result
    */
   static getContentFromMessage(message: AMQPMessage): unknown | never {
-    if(message.body === null) {
+    if (message.body === null) {
       throw emptyMessageError();
     }
 
@@ -85,10 +88,10 @@ export class ServiceConnection extends EventEmitter {
     [handlerName: string]: MessageHandler;
   };
   options: AMQPOptions;
-  queueOptions: AMQPQueueOptions;
+  queueOptions: QueueOptions;
   connection: Promise<AMQPConnection> | null = null;
 
-  constructor(adapter: AMQPAdapter, options: AMQPOptions, queueOptions: AMQPQueueOptions, serviceName: string, log: Logger) {
+  constructor(adapter: AMQPAdapter, options: AMQPOptions, queueOptions: QueueOptions, serviceName: string, log: Logger) {
     super();
 
     this.options = options;
@@ -119,9 +122,16 @@ export class ServiceConnection extends EventEmitter {
    * ha-mode property should be set to 'all' to force queue replication
    */
   getQueueArgs(): AMQPQueueArgs {
-    const { args } = this.queueOptions;
+    const args: AMQPQueueArgs = {};
 
-    return this.isClusterConnection() ? { ...args, 'ha-mode': 'all' } : args;
+    if (this.isClusterConnection()) {
+      args["ha-mode"] = "all";
+    }
+    if (this.queueOptions.singleActiveConsumer) {
+      args["x-single-active-consumer"] = true;
+    }
+
+    return args;
   }
 
   /**
@@ -551,7 +561,7 @@ export class ServiceConnection extends EventEmitter {
 const connectService = (
   adapter: AMQPAdapter,
   options: AMQPOptions,
-  queueOptions: AMQPQueueOptions,
+  queueOptions: QueueOptions,
   serviceName: string,
   log: Logger
 ): { service: ServiceConnection; connection: Promise<AMQPConnection> } => {

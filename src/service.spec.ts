@@ -10,9 +10,7 @@ const optionsMock = {
   host: 'localhost'
 };
 const queueOptionsMock = {
-  args: {
-    'x-single-active-consumer': true,
-  }
+  singleActiveConsumer: true,
 };
 const logger = {
   info: jest.fn(),
@@ -79,13 +77,13 @@ describe('#constructor', () => {
 
 describe('#getQueueArgs', () => {
   it('return options args object if configured in standalone mode', () => {
-    expect(serviceConnection.getQueueArgs()).toEqual(queueOptionsMock.args);
+    expect(serviceConnection.getQueueArgs()).toEqual({ "x-single-active-consumer": true });
   });
 
   it('return options args object with ha-mode=all if configured in cluster mode', () => {
     serviceConnection.options.cluster = ['a', 'b', 'c'];
 
-    expect(serviceConnection.getQueueArgs()).toEqual({ ...queueOptionsMock.args, 'ha-mode': 'all' });
+    expect(serviceConnection.getQueueArgs()).toEqual({ 'ha-mode': 'all', "x-single-active-consumer": true });
   });
 });
 
@@ -127,7 +125,7 @@ describe('#assertServiceQueue', () => {
   it('asserts and await assertion of service queue', async () => {
     await serviceConnection.assertServiceQueue();
 
-    expect(amqpConnection.queue).lastCalledWith('dispatcher', { durable: true }, queueOptionsMock.args);
+    expect(amqpConnection.queue).lastCalledWith('dispatcher', { durable: true }, { "x-single-active-consumer": true });
   });
 
   it('should throw if connection not initialized', async () => {

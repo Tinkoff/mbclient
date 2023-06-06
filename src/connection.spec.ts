@@ -29,7 +29,7 @@ Array [
     "username": "stub",
   },
   Object {
-    "args": Object {},
+    "singleActiveConsumer": false,
   },
   "test",
   Object {
