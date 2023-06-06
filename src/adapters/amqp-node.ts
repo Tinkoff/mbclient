@@ -56,10 +56,6 @@ export interface AMQPOptions {
   exchange?: string;
 }
 
-export interface AMQPQueueOptions {
-  args: AMQPQueueArgs;
-}
-
 // to indicate, that these types are related to amqp-client.js, prepend them with AMQP
 interface AMQPConsumeParams { noAck: false; }
 interface AMQPConsumer { tag: string; }
