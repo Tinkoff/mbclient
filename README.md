@@ -32,16 +32,14 @@ const client = createClient({
     frameMax: 8192,
   },
   queueOptions: {
-    args: {
-      'x-single-active-consumer': true,
-    }
+    singleActiveConsumer: true,
   }
 });
 ```
 
 See [AMQPOptions](https://github.com/Tinkoff/mbclient/blob/master/src/adapters/amqp-node.ts#L3) interface to get all available options.  
 
-See [AMQPQueueOptions](https://github.com/Tinkoff/mbclient/blob/master/src/adapters/amqp-node.ts#L59) interface to get all available queue options.
+See [QueueOptions](https://github.com/Tinkoff/mbclient/blob/master/src/service.ts#L28) interface to get all available queue options.
 
 ## Subscribing
 
