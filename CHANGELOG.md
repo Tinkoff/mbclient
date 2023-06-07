@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/Tinkoff/mbclient/compare/v3.2.2...v3.3.0) (2023-06-07)
+
+
+### Features
+
+* add single active consumer argument support ([#160](https://github.com/Tinkoff/mbclient/issues/160)) ([4e59188](https://github.com/Tinkoff/mbclient/commit/4e591884c213e0d888aa0e0453019dbf13bd261c))
+
 ## [3.2.2](https://github.com/Tinkoff/mbclient/compare/v3.2.1...v3.2.2) (2023-02-13)
 
 
