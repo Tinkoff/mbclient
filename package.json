@@ -54,6 +54,6 @@
     "jest": "28.1.1",
     "semantic-release": "19.0.5",
     "ts-jest": "28.0.4",
-    "typescript": "5.0.4"
+    "typescript": "5.1.3"
   }
 }
