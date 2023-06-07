@@ -28,6 +28,9 @@ Array [
     "password": "test",
     "username": "stub",
   },
+  Object {
+    "singleActiveConsumer": false,
+  },
   "test",
   Object {
     "error": [MockFunction],

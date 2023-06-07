@@ -87,7 +87,7 @@ interface AMQPMessageProps {
   userId?: string;
 }
 interface AMQPQueueParams { durable: true; }
-export interface AMQPQueueArgs { 'ha-mode'?: 'all'; }
+export interface AMQPQueueArgs { 'ha-mode'?: 'all'; 'x-single-active-consumer'?: boolean; }
 
 // `reexport` type, enumerating only used subset
 export type AMQPConnection = {

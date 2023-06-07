@@ -1,5 +1,5 @@
 import getAMQPNodeAdapter, { AMQPConnection } from './adapters/amqp-node';
-import connectServiceQueues, { ServiceConnection } from './service';
+import connectServiceQueues, { QueueOptions, ServiceConnection } from './service';
 import { CreateServiceOptions } from './index';
 
 export enum ConnectionStatus {
@@ -9,10 +9,12 @@ export enum ConnectionStatus {
   DISCONNECTED = 'disconnected'
 }
 
-const connect = (options: CreateServiceOptions): { service: ServiceConnection; connection: Promise<AMQPConnection> } => {
-  const { connectOptions, serviceName } = options;
+const queueOptionsDefault: QueueOptions = { singleActiveConsumer: false };
 
-  return connectServiceQueues(getAMQPNodeAdapter(), connectOptions, serviceName, options.logger);
+const connect = (options: CreateServiceOptions): { service: ServiceConnection; connection: Promise<AMQPConnection> } => {
+  const { connectOptions, logger, serviceName, queueOptions = queueOptionsDefault } = options;
+
+  return connectServiceQueues(getAMQPNodeAdapter(), connectOptions, queueOptions, serviceName, logger);
 };
 
 export default connect;

@@ -9,6 +9,9 @@ const optionsMock = {
   password: 'test123',
   host: 'localhost'
 };
+const queueOptionsMock = {
+  singleActiveConsumer: true,
+};
 const logger = {
   info: jest.fn(),
   error: jest.fn(),
@@ -29,7 +32,7 @@ const amqpConnection = {
 let serviceConnection: ServiceConnection;
 
 beforeEach(() => {
-  serviceConnection = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+  serviceConnection = new ServiceConnection(testAdapter, optionsMock, queueOptionsMock, 'dispatcher', logger);
   serviceConnection.connection = Promise.resolve<AMQPConnection>(amqpConnection);
   logger.error.mockClear();
 });
@@ -73,14 +76,14 @@ describe('#constructor', () => {
 });
 
 describe('#getQueueArgs', () => {
-  it('return empty object if configured in standalone mode', () => {
-    expect(serviceConnection.getQueueArgs()).toEqual({});
+  it('return options args object if configured in standalone mode', () => {
+    expect(serviceConnection.getQueueArgs()).toEqual({ "x-single-active-consumer": true });
   });
 
-  it('return ha-mode=all if configured in cluster mode', () => {
+  it('return options args object with ha-mode=all if configured in cluster mode', () => {
     serviceConnection.options.cluster = ['a', 'b', 'c'];
 
-    expect(serviceConnection.getQueueArgs()).toEqual({ 'ha-mode': 'all' });
+    expect(serviceConnection.getQueueArgs()).toEqual({ 'ha-mode': 'all', "x-single-active-consumer": true });
   });
 });
 
@@ -122,11 +125,11 @@ describe('#assertServiceQueue', () => {
   it('asserts and await assertion of service queue', async () => {
     await serviceConnection.assertServiceQueue();
 
-    expect(amqpConnection.queue).lastCalledWith('dispatcher', { durable: true }, {});
+    expect(amqpConnection.queue).lastCalledWith('dispatcher', { durable: true }, { "x-single-active-consumer": true });
   });
 
   it('should throw if connection not initialized', async () => {
-    const notInitializedServiceConnection = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+    const notInitializedServiceConnection = new ServiceConnection(testAdapter, optionsMock, queueOptionsMock, 'dispatcher', logger);
 
     await expect(notInitializedServiceConnection.assertServiceQueue()).rejects.toThrowError('Connection was not initialized with connect() method.');
   });
@@ -134,7 +137,7 @@ describe('#assertServiceQueue', () => {
 
 describe('#getConnection', () => {
   it('sets retry strategy from options and retries on errors', async () => {
-    const serviceConn = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+    const serviceConn = new ServiceConnection(testAdapter, optionsMock, queueOptionsMock, 'dispatcher', logger);
 
     const retryStrategy = jest.fn().mockReturnValue(5);
 
@@ -160,7 +163,7 @@ describe('#getConnection', () => {
   });
 
   it('generate error when status is disconnecting', async () => {
-    const serviceConn = new ServiceConnection(testAdapter, optionsMock, 'dispatcher', logger);
+    const serviceConn = new ServiceConnection(testAdapter, optionsMock, queueOptionsMock, 'dispatcher', logger);
     serviceConn.status = ConnectionStatus.DISCONNECTING;
     await expect(serviceConn.getConnection()).rejects.toThrow(amqpConnectGracefullyStopped());
   });
@@ -773,7 +776,7 @@ describe('#consumeQueue', () => {
 
 describe('connectService', () => {
   it('return object with service and connection', () => {
-    const result = connectService(testAdapter, optionsMock, 'dispatcher', logger);
+    const result = connectService(testAdapter, optionsMock, queueOptionsMock, 'dispatcher', logger);
     result.connection.catch(() => {
       // Do nothing
     });

@@ -2,11 +2,13 @@ import connect from './connection';
 import { AMQPOptions } from './adapters/amqp-node';
 import { Logger } from './logger';
 import { MessageHandler } from './message';
+import { QueueOptions } from './service';
 
 export interface CreateServiceOptions {
   serviceName: string;
   logger: Logger;
   connectOptions: AMQPOptions;
+  queueOptions?: QueueOptions;
 }
 
 export interface ClientSendMessage {
